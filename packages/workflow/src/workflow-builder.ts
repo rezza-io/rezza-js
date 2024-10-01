@@ -92,7 +92,7 @@ export class WorkflowBuilder<
    *
    * @returns A new WorkflowBuilder instance
    */
-  static create() {
+  static create(): WorkflowBuilder<{}, string> {
     return new WorkflowBuilder({}, new Set<string>());
   }
 

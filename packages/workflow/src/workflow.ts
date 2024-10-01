@@ -70,13 +70,13 @@ export class Workflow<
     throw new InputInterrupt(name, schema);
   };
 
-  addTempEvent = (name: string, newEvent: unknown) => {
+  addTempEvent = (name: string, newEvent: unknown): void => {
     // console.log("addTempNewEvent", newEvent);
     this.tempNewEvents![this.currentNode!] ||= [];
     this.tempNewEvents![this.currentNode!]!.push({ k: name, v: newEvent });
   };
 
-  capture = <T>(name: string, fn: () => T | Promise<T>) => {
+  capture = <T>(name: string, fn: () => T | Promise<T>): T => {
     const stepName = `capture:${name}`;
     try {
       return this.step<T>(stepName, { schema: {} });
@@ -93,11 +93,11 @@ export class Workflow<
     }
   };
 
-  getNow = () => (this.tempRunOpts?.now ? this.tempRunOpts.now() : +new Date());
+  getNow = (): number => (this.tempRunOpts?.now ? this.tempRunOpts.now() : +new Date());
 
-  now = () => this.capture("now", this.getNow);
+  now = (): number => this.capture("now", this.getNow);
 
-  sleep = (ms: number) => {
+  sleep = (ms: number): void => {
     this.waitUntil(this.now() + ms);
   };
 
@@ -235,7 +235,7 @@ export class Workflow<
   }
   isRunning = false;
 
-  executeNodes = async (incomingEvents: { [K in keyof T]?: StepEvent[] }) => {
+  executeNodes = async (incomingEvents: { [K in keyof T]?: StepEvent[] }): Promise<void> => {
     for (const node of this.topologicalSort()) {
       this.currentNode = node;
       this.tempResults![node] = await this.executeNode(
@@ -248,7 +248,11 @@ export class Workflow<
   async dryRun(
     incomingEvents: { [K in keyof T]?: StepEvent[] },
     opts?: RunOptions,
-  ) {
+  ): Promise<{
+    results: { [K in keyof T]?: Result<T[K]["value"]> } | null;
+    newEvents: { [K in keyof T]?: StepEvent[] } | null;
+    timeout: boolean;
+  }> {
     if (this.isRunning) {
       throw new Error("Workflow is already running");
     }
@@ -278,7 +282,7 @@ export class Workflow<
   async run(
     incomingEvents?: { [K in keyof T]?: StepEvent[] },
     opts?: RunOptions,
-  ) {
+  ): Promise<{ [K in keyof T]?: Result<T[K]["value"]> } | null> {
     const { newEvents, results, timeout } = await this.dryRun(
       incomingEvents ?? {},
       opts,
