@@ -1,3 +1,9 @@
+/**
+ * Represents the context available to nodes within a workflow.
+ * This interface provides methods for interacting with the workflow,
+ * such as retrieving node values, requesting user input, and managing
+ * time-based operations.
+ */
 export interface WorkflowContext<
   T extends Record<string, DAGNode<unknown, string>> = Record<
     string,
@@ -146,10 +152,19 @@ export interface WorkflowContext<
    */
   random(): number;
 }
+
+/**
+ * Represents a node in a Directed Acyclic Graph (DAG) within the workflow.
+ */
 export type DAGNode<V, D extends string, G extends string = string> = {
+  /* The computed value of the node */
   value: V;
+  /* Function to compute the node's value */
   compute: (context: WorkflowContext) => V;
+  /* Array of keys representing the node's dependencies */
   dependencies: D[];
+  /* Optional group to which the node belongs */
   group?: G;
+  /* Optional saga function for advanced flow control */
   saga?: (context: WorkflowContext, value: V) => ["cont" | "halt", V];
 };

@@ -24,10 +24,47 @@ class PromiseInterrupt extends Error {
   }
 }
 
+/**
+ * Represents an interruption in the workflow execution due to a time-based condition.
+ * This type is used when a node is waiting for a specific time to be reached before continuing.
+ */
 export type InterruptedUntil = { waitUntil?: number };
-export type InterruptedValue = { schema: object }; // JSON Schema
-export type StepEvent = { k: string; v: unknown };
+/**
+ * Represents an interruption in the workflow execution due to a required user input.
+ * This type is used when a node is waiting for user input that conforms to a specific JSON schema.
+ */
+export type InterruptedValue = {
+  /* The JSON schema describing the expected input structure. */
+  schema: object;
+};
 
+/**
+ * Represents an event that occurred during a workflow step.
+ * This type is used to capture and store information about specific actions or data
+ * produced during the execution of a workflow node.
+ */
+export type StepEvent = {
+  /* The key or name of the event. */
+  k: string;
+  /* The value associated with the event, which can be of any type. */
+  v: unknown;
+};
+
+/**
+ * Represents the result of a workflow node execution.
+ * This type is used to indicate the current state of a node's execution,
+ * which can be pending, successful, erroneous, or interrupted.
+ *
+ * @typeParam T - The type of the value produced by the node.
+ * @typeParam Node - The type of the node identifier (defaults to string).
+ *
+ * The Result type can be one of the following:
+ * - pending: Indicates that the node is waiting for its dependencies to complete.
+ * - ok: Indicates that the node has successfully completed execution.
+ * - err: Indicates that an error occurred during the node's execution.
+ * - intr: Indicates that the node's execution was interrupted, possibly due to
+ *         a time-based condition or a need for additional input.
+ */
 export type Result<T, Node extends string = string> =
   | { type: "pending"; nodes: Node[] }
   | { type: "ok"; value: T }
@@ -38,6 +75,24 @@ export type Result<T, Node extends string = string> =
       | (InterruptedUntil & InterruptedValue) // timeout
     ));
 
+/**
+ * Represents a workflow that can execute a directed acyclic graph (DAG) of nodes.
+ * Each node in the workflow can compute a value and depend on other nodes.
+ *
+ * @typeParam T - A record type where keys are node names and values are DAGNode types.
+ * @typeParam G - A string type representing the group names in the workflow.
+ *
+ * The Workflow class provides methods to:
+ * - Execute nodes in topological order
+ * - Handle dependencies between nodes
+ * - Manage interruptions and resumptions in node execution
+ * - Capture and replay events for idempotency
+ * - Perform dry runs and actual runs of the workflow
+ *
+ * It implements the WorkflowContext interface, providing utility methods
+ * that can be used within node computations, such as `get`, `step`, `capture`,
+ * `now`, `sleep`, `waitUntil`, and `random`.
+ */
 export class Workflow<
   T extends Record<string, DAGNode<unknown, string>> = Record<never, unknown>,
   G extends string = string,
@@ -93,7 +148,8 @@ export class Workflow<
     }
   };
 
-  getNow = (): number => (this.tempRunOpts?.now ? this.tempRunOpts.now() : +new Date());
+  getNow = (): number =>
+    this.tempRunOpts?.now ? this.tempRunOpts.now() : +new Date();
 
   now = (): number => this.capture("now", this.getNow);
 
@@ -153,9 +209,10 @@ export class Workflow<
       let value: T[K]["value"] | undefined = undefined;
       let eventIdx = 0;
       try {
-        if (node.saga && this.snapshots[key]) {
-          idx = this.snapshots[key][0];
-          value = this.snapshots[key][1];
+        const snapshot = this.snapshots[key];
+        if (node.saga && snapshot) {
+          idx = snapshot[0];
+          value = snapshot[1];
         } else {
           value = await node.compute(this);
         }
@@ -235,7 +292,9 @@ export class Workflow<
   }
   isRunning = false;
 
-  executeNodes = async (incomingEvents: { [K in keyof T]?: StepEvent[] }): Promise<void> => {
+  executeNodes = async (incomingEvents: {
+    [K in keyof T]?: StepEvent[];
+  }): Promise<void> => {
     for (const node of this.topologicalSort()) {
       this.currentNode = node;
       this.tempResults![node] = await this.executeNode(

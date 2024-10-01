@@ -36,6 +36,7 @@ export class WorkflowBuilder<
     newGroups.add(group);
     return new WorkflowBuilder<T, G | NewG>(this.nodes, newGroups);
   }
+
   /**
    * Adds a new node to the workflow.
    *
