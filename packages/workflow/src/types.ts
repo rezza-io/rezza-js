@@ -1,4 +1,24 @@
 /**
+ * Represents the context for a step in the workflow.
+ */
+export interface StepContext {
+  /**
+   * The unique identifier for the step.
+   */
+  key: string;
+
+  /**
+   * Optional description of the step.
+   */
+  description?: string;
+
+  /**
+   * Additional metadata for the step as key-value pairs.
+   */
+  extra?: Record<string, unknown>;
+}
+
+/**
  * Represents the context available to nodes within a workflow.
  * This interface provides methods for interacting with the workflow,
  * such as retrieving node values, requesting user input, and managing
@@ -33,7 +53,7 @@ export interface WorkflowContext<
   /**
    * Requests user input for a step in the workflow.
    *
-   * @param name - The name of the step.
+   * @param context - An object containing information about the step.
    * @param schema - The JSON schema describing the expected input.
    * @returns The user input conforming to the provided schema.
    *
@@ -49,13 +69,17 @@ export interface WorkflowContext<
    *       },
    *       required: ['name', 'age']
    *     };
-   *     return step('getUserInfo', schema);
+   *     return step({
+   *       key: 'getUserInfo',
+   *       description: 'Please enter your name and age',
+   *       extra: { importance: 'high' }
+   *     }, schema);
    *   })
    *   .build();
-   * // This node's compute function uses step to request user input
+   * // This node's compute function uses step to request user input with additional context
    * ```
    */
-  step<T>(name: string, schema: object): T;
+  step<T>(context: StepContext, schema: object): T;
 
   /**
    * Returns the current timestamp in milliseconds.
@@ -79,33 +103,37 @@ export interface WorkflowContext<
    * Pauses the execution of the current node for the specified duration.
    *
    * @param ms - The number of milliseconds to sleep.
+   * @param context - Optional context information for the sleep operation.
    *
    * @example
    * ```typescript
    * const workflow = WorkflowBuilder.create()
    *   .addNode({ key: 'delayedGreeting' }, ({ sleep }) => {
-   *     sleep(2000); // Pause for 2 seconds
+   *     sleep(2000, { key: 'shortDelay', description: 'Pause for 2 seconds' });
    *     return 'Hello after a short delay!';
    *   })
    *   .build();
-   * // This node's compute function uses sleep to introduce a delay
+   * // This node's compute function uses sleep to introduce a delay with context
    * ```
    */
-  sleep(ms: number): void;
+  sleep(ms: number, context?: Partial<StepContext>): void;
 
   /**
    * Captures the execution of a function, ensuring idempotency and encapsulating side effects within the workflow.
    * This method allows for safe retries and consistent results across multiple executions.
    *
-   * @param name - The name of the capture operation, used for identifying and potentially replaying the operation.
+   * @param context - An object containing information about the step, including a unique key for the capture operation.
    * @param fn - The function to be executed and captured, typically containing side effects or external interactions.
-   * @returns The result of the executed function, cached for subsequent calls with the same name.
+   * @returns The result of the executed function, cached for subsequent calls with the same key.
    *
    * @example
    * ```typescript
    * const workflow = WorkflowBuilder.create()
    *   .addNode({ key: 'userData' }, ({ capture }) => {
-   *     return capture('fetchUserData', async () => {
+   *     return capture({
+   *       key: 'fetchUserData',
+   *       description: 'Fetch user data from API'
+   *     }, async () => {
    *       const response = await fetch('https://api.example.com/user');
    *       return response.json();
    *     });
@@ -114,26 +142,30 @@ export interface WorkflowContext<
    * // This node's compute function uses capture to safely fetch and cache user data
    * ```
    */
-  capture<T>(name: string, fn: () => T | Promise<T>): T;
+  capture<T>(context: StepContext, fn: () => T | Promise<T>): T;
 
   /**
    * Pauses the execution of the current node until the specified datetime.
    *
    * @param datetime - The timestamp (in milliseconds) to wait until.
+   * @param context - Optional context information for the wait operation.
    *
    * @example
    * ```typescript
    * const workflow = WorkflowBuilder.create()
    *   .addNode({ key: 'scheduledTask' }, ({ now, waitUntil }) => {
    *     const futureTime = now() + 5000; // 5 seconds from now
-   *     waitUntil(futureTime);
+   *     waitUntil(futureTime, {
+   *       key: 'shortWait',
+   *       description: 'Wait for 5 seconds'
+   *     });
    *     return 'Task executed at the scheduled time';
    *   })
    *   .build();
-   * // This node's compute function uses waitUntil to schedule a task
+   * // This node's compute function uses waitUntil to schedule a task with context
    * ```
    */
-  waitUntil(datetime: number): void;
+  waitUntil(datetime: number, context?: Partial<StepContext>): void;
 
   /**
    * Generates a random number between 0 (inclusive) and 1 (exclusive).

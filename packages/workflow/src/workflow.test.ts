@@ -1,10 +1,11 @@
-import { Heap } from "heap-js";
 import { describe, expect, test } from "bun:test";
+import dedent from "dedent";
+import { Heap } from "heap-js";
+import _ from "lodash";
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
-import { WorkflowBuilder } from "./workflow-builder";
 import { sleep } from "./utils";
-import _ from "lodash";
+import { WorkflowBuilder } from "./workflow-builder";
 
 describe("Workflow", () => {
   test("basic usage", async () => {
@@ -32,7 +33,15 @@ describe("Workflow", () => {
       .addNode({ key: "c", deps: ["a"] }, ({ get, step }) => {
         const schema = z.object({ x: z.number().describe("sweet number") });
         const { x } = schema.parse(
-          step("need_number", zodToJsonSchema(schema)),
+          step(
+            {
+              key: "need_number",
+              description: dedent`
+              Enter a number
+              `,
+            },
+            zodToJsonSchema(schema),
+          ),
         );
         return get("a") + x > 0;
       })
@@ -107,7 +116,7 @@ describe("Workflow", () => {
   test("async capture", async () => {
     const workflow = WorkflowBuilder.create()
       .addNode({ key: "node1" }, (ctx) =>
-        ctx.capture("noop", async () => {
+        ctx.capture({ key: "noop" }, async () => {
           await sleep(10);
           return 1;
         }),
@@ -119,7 +128,7 @@ describe("Workflow", () => {
   test("async capture that throws", async () => {
     const workflow = WorkflowBuilder.create()
       .addNode({ key: "node1" }, (ctx) =>
-        ctx.capture("noop", async () => {
+        ctx.capture({ key: "noop" }, async () => {
           throw new Error("oops");
         }),
       )
@@ -150,7 +159,9 @@ describe("Workflow", () => {
 
   test("check step name", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, (ctx): number => ctx.capture("noop", () => 1))
+      .addNode({ key: "node1" }, (ctx): number =>
+        ctx.capture({ key: "noop" }, () => 1),
+      )
       .build();
     const res = (await workflow.dryRun({ node1: [{ k: "nap", v: 2 }] })).results
       .node1;
@@ -185,11 +196,11 @@ describe("saga function", () => {
         ({ get }) => get("node1") * 2,
         (ctx) => {
           const schema = z.number();
-          return [
-            "cont",
-            schema.parse(ctx.step("addition", zodToJsonSchema(schema))) +
-              ctx.get("node1") * 2,
-          ];
+          const stepResult = ctx.step(
+            { key: "addition", description: "Enter a number for addition" },
+            zodToJsonSchema(schema),
+          );
+          return ["cont", schema.parse(stepResult) + ctx.get("node1") * 2];
         },
       )
       .build();
@@ -217,7 +228,12 @@ describe("saga function", () => {
           const schema = z.number();
           return [
             "cont",
-            schema.parse(ctx.step("addition", zodToJsonSchema(schema))) + value,
+            schema.parse(
+              ctx.step(
+                { key: "addition", description: "Enter a number for addition" },
+                zodToJsonSchema(schema),
+              ),
+            ) + value,
           ];
         },
       )
@@ -252,7 +268,9 @@ describe("saga function", () => {
     try {
       await workflow.run({}, { timeout: 100 });
     } catch (e) {
-      if  (e instanceof Error) { expect(e.message).toBe("Timeout"); }
+      if (e instanceof Error) {
+        expect(e.message).toBe("Timeout");
+      }
     }
   });
 
@@ -320,7 +338,10 @@ describe("saga function", () => {
           efactor: 2.5,
         }),
         (ctx, item) => {
-          const reviewResult = ctx.step("review", zodToJsonSchema(gradeSchema));
+          const reviewResult = ctx.step(
+            { key: "review", description: "Review the item" },
+            zodToJsonSchema(gradeSchema),
+          );
           const grade = gradeSchema.parse(reviewResult);
           const newItem = supermemo(item, grade);
           ctx.sleep(newItem.interval * ONE_DAY);
@@ -377,7 +398,10 @@ describe("saga function", () => {
         // Math.random() * ((current - start) / ONE_DAY / days) * 5,
         (1 - Math.random() / (reviews / 2 + 1)) * 5,
       );
-      if (res.supermemo?.type === "intr" && res.supermemo.step === "review") {
+      if (
+        res.supermemo?.type === "intr" &&
+        res.supermemo.step.key === "review"
+      ) {
         reviews += 1;
         res = await workflow.run(
           { supermemo: [{ k: "review", v: grade }] },

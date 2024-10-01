@@ -81,7 +81,10 @@ exports[`Workflow basic step 3`] = `
       ],
       "type": "object",
     },
-    "step": "need_number",
+    "step": {
+      "description": "Enter a number",
+      "key": "need_number",
+    },
     "type": "intr",
   },
   "d": {

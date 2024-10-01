@@ -1,4 +1,4 @@
-import type { DAGNode, WorkflowContext } from "./types";
+import type { DAGNode, StepContext, WorkflowContext } from "./types";
 import { sleep } from "./utils";
 
 export interface RunOptions {
@@ -8,7 +8,7 @@ export interface RunOptions {
 
 class InputInterrupt extends Error {
   constructor(
-    public step: string,
+    public step: StepContext,
     public schema?: object,
     public waitUntil?: number,
   ) {
@@ -69,7 +69,7 @@ export type Result<T, Node extends string = string> =
   | { type: "pending"; nodes: Node[] }
   | { type: "ok"; value: T }
   | { type: "err"; error: Error }
-  | ({ type: "intr"; step: string; value?: T; eventIdx?: number } & (
+  | ({ type: "intr"; step: StepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
       | (InterruptedUntil & InterruptedValue) // timeout
@@ -120,9 +120,8 @@ export class Workflow<
         ? result.value
         : undefined;
   };
-
-  step = <T>(name: string, schema: object): T => {
-    throw new InputInterrupt(name, schema);
+  step = <T>(context: StepContext, schema: object): T => {
+    throw new InputInterrupt(context, schema);
   };
 
   addTempEvent = (name: string, newEvent: unknown): void => {
@@ -131,17 +130,17 @@ export class Workflow<
     this.tempNewEvents![this.currentNode!]!.push({ k: name, v: newEvent });
   };
 
-  capture = <T>(name: string, fn: () => T | Promise<T>): T => {
-    const stepName = `capture:${name}`;
+  capture = <T>(context: StepContext, fn: () => T | Promise<T>): T => {
+    const stepKey = `capture:${context.key}`;
     try {
-      return this.step<T>(stepName, { schema: {} });
+      return this.step<T>({ key: stepKey }, { schema: {} });
     } catch (e) {
       if (e instanceof InputInterrupt) {
         const newEvent = fn();
         if (newEvent instanceof Promise) {
-          throw new PromiseInterrupt(stepName, newEvent);
+          throw new PromiseInterrupt(stepKey, newEvent);
         }
-        this.addTempEvent(stepName, newEvent);
+        this.addTempEvent(stepKey, newEvent);
         return newEvent;
       }
       throw e;
@@ -150,20 +149,23 @@ export class Workflow<
 
   getNow = (): number =>
     this.tempRunOpts?.now ? this.tempRunOpts.now() : +new Date();
+  now = (): number => this.capture({ key: "now" }, this.getNow);
 
-  now = (): number => this.capture("now", this.getNow);
-
-  sleep = (ms: number): void => {
-    this.waitUntil(this.now() + ms);
+  sleep = (ms: number, context?: Partial<StepContext>): void => {
+    this.waitUntil(this.now() + ms, { key: "sleep", ...context });
   };
 
-  waitUntil = (datetime: number): void => {
+  waitUntil = (datetime: number, context?: Partial<StepContext>): void => {
     if (this.getNow() < datetime)
-      throw new InputInterrupt("waitUntil", undefined, datetime);
+      throw new InputInterrupt(
+        { key: "waitUntil", ...context },
+        undefined,
+        datetime,
+      );
   };
 
   random = (): number => {
-    return this.capture("random", Math.random);
+    return this.capture({ key: "random" }, Math.random);
   };
 
   private async executeNode<K extends keyof T>(
@@ -194,17 +196,17 @@ export class Workflow<
         ...events,
         ...(this.tempNewEvents?.[key] ?? []),
       ];
-      this.step = <T>(name: string, schema: object): T => {
+      this.step = <T>(context: StepContext, schema: object): T => {
         if (idx < allEvents?.length) {
           const event = allEvents[idx++];
-          if (event.k === name) {
+          if (event.k === context.key) {
             return event.v as T;
           } else {
             throw new Error(
-              `Expected event ${name} but got ${event.k} instead`,
+              `Expected event ${context.key} but got ${event.k} instead`,
             );
           }
-        } else throw new InputInterrupt(name, schema);
+        } else throw new InputInterrupt(context, schema);
       };
       let value: T[K]["value"] | undefined = undefined;
       let eventIdx = 0;

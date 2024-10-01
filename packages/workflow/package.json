@@ -1,7 +1,7 @@
 {
   "name": "@rezza.io/workflow",
   "description": "Durable Workflow Engine from rezza.io",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "module": "src/index.ts",
   "repository": {
     "type": "git",
@@ -17,12 +17,14 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "bun test",
+    "publish:npm": "npm run lint && npm test && npm run build && npm publish --access public"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/eslint__js": "^8.42.3",
     "@types/lodash": "^4.17.9",
+    "dedent": "^1.5.3",
     "eslint": "^9.11.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
