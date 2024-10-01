@@ -1,6 +1,7 @@
 {
   "name": "@rezza.io/workflow",
-  "version": "0.1.5",
+  "description": "Durable Workflow Engine from rezza.io",
+  "version": "0.1.6",
   "module": "src/index.ts",
   "repository": {
     "type": "git",
