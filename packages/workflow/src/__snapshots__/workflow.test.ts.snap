@@ -1,0 +1,151 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Workflow basic usage 1`] = `
+[
+  "a",
+  "b",
+  "c",
+  "d",
+]
+`;
+
+exports[`Workflow basic usage 2`] = `
+[
+  "b",
+  "c",
+]
+`;
+
+exports[`Workflow basic usage 3`] = `
+{
+  "a": {
+    "type": "ok",
+    "value": 1,
+  },
+  "b": {
+    "type": "ok",
+    "value": "hello 1",
+  },
+  "c": {
+    "type": "ok",
+    "value": true,
+  },
+  "d": {
+    "type": "ok",
+    "value": {
+      "flag": true,
+      "value": 7,
+    },
+  },
+}
+`;
+
+exports[`Workflow basic step 1`] = `
+[
+  "a",
+  "b",
+  "c",
+  "d",
+]
+`;
+
+exports[`Workflow basic step 2`] = `
+[
+  "b",
+  "c",
+]
+`;
+
+exports[`Workflow basic step 3`] = `
+{
+  "a": {
+    "type": "ok",
+    "value": 1,
+  },
+  "b": {
+    "type": "ok",
+    "value": "hello 1",
+  },
+  "c": {
+    "schema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "description": "sweet number",
+          "type": "number",
+        },
+      },
+      "required": [
+        "x",
+      ],
+      "type": "object",
+    },
+    "step": "need_number",
+    "type": "intr",
+  },
+  "d": {
+    "nodes": [
+      "c",
+    ],
+    "type": "pending",
+  },
+}
+`;
+
+exports[`Workflow basic step 4`] = `
+{
+  "a": {
+    "type": "ok",
+    "value": 1,
+  },
+  "b": {
+    "type": "ok",
+    "value": "hello 1",
+  },
+  "c": {
+    "type": "ok",
+    "value": true,
+  },
+  "d": {
+    "type": "ok",
+    "value": {
+      "flag": true,
+      "value": 7,
+    },
+  },
+}
+`;
+
+exports[`Workflow basic step 5`] = `
+{
+  "a": {
+    "type": "ok",
+    "value": 1,
+  },
+  "b": {
+    "type": "ok",
+    "value": "hello 1",
+  },
+  "c": {
+    "error": [ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "undefined",
+    "path": [
+      "x"
+    ],
+    "message": "Required"
+  }
+]],
+    "type": "err",
+  },
+  "d": {
+    "nodes": [
+      "c",
+    ],
+    "type": "pending",
+  },
+}
+`;
