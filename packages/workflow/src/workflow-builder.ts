@@ -92,6 +92,7 @@ export class WorkflowBuilder<
    *
    * @returns A new WorkflowBuilder instance
    */
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   static create(): WorkflowBuilder<{}, string> {
     return new WorkflowBuilder({}, new Set<string>());
   }
