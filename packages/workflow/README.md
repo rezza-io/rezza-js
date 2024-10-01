@@ -1,15 +1,32 @@
 # @rezza.io/workflow
 
-To install dependencies:
+## Gettings Started
+
+### Install
+
+With NPM
 
 ```bash
-bun install
+npx jsr add @rezza/workflow
 ```
 
-To run:
+With bun
 
 ```bash
-bun run index.ts
+bunx jsr add @rezza/workflow
 ```
 
-This project was created using `bun init` in bun v1.1.26. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+### Create a workflow
+
+```ts
+import { WorkflowBuilder } from "@rezza/workflow";
+
+const workflow = WorkflowBuilder.create()
+  .addGroup("input")
+  .addNode({ key: "name", group: "input" }, () => "World")
+  .addNode({ key: "greeting", deps: ["name"] }, ({ get }) => `Hello, ${get("name")}!`)
+  .build();
+
+const result = await workflow.run();
+console.log(result.greeting); // Output: "Hello, World!"
+```
