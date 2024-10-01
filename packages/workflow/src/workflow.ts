@@ -249,8 +249,8 @@ export class Workflow<
     incomingEvents: { [K in keyof T]?: StepEvent[] },
     opts?: RunOptions,
   ): Promise<{
-    results: { [K in keyof T]?: Result<T[K]["value"]> } | null;
-    newEvents: { [K in keyof T]?: StepEvent[] } | null;
+    results: { [K in keyof T]?: Result<T[K]["value"]> };
+    newEvents: { [K in keyof T]?: StepEvent[] };
     timeout: boolean;
   }> {
     if (this.isRunning) {
@@ -282,7 +282,7 @@ export class Workflow<
   async run(
     incomingEvents?: { [K in keyof T]?: StepEvent[] },
     opts?: RunOptions,
-  ): Promise<{ [K in keyof T]?: Result<T[K]["value"]> } | null> {
+  ): Promise<{ [K in keyof T]?: Result<T[K]["value"]> }> {
     const { newEvents, results, timeout } = await this.dryRun(
       incomingEvents ?? {},
       opts,
