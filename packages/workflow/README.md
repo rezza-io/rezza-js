@@ -7,19 +7,19 @@
 With NPM
 
 ```bash
-npx jsr add @rezza/workflow
+npm add @rezza.io/workflow
 ```
 
 With bun
 
 ```bash
-bunx jsr add @rezza/workflow
+bun add @rezza.io/workflow
 ```
 
 ### Create a workflow
 
 ```ts
-import { WorkflowBuilder } from "@rezza/workflow";
+import { WorkflowBuilder } from "@rezza.io/workflow";
 
 const workflow = WorkflowBuilder.create()
   .addGroup("input")
