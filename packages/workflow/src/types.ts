@@ -108,7 +108,7 @@ export interface WorkflowContext<
    * // This node's compute function uses capture to safely fetch and cache user data
    * ```
    */
-  capture: <T>(name: string, fn: () => T | Promise<T>) => T;
+  capture<T>(name: string, fn: () => T | Promise<T>): T;
 
   /**
    * Pauses the execution of the current node until the specified datetime.
