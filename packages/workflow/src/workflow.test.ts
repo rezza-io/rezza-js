@@ -24,7 +24,7 @@ describe("Workflow", () => {
 
     expect(workflow.topologicalSort()).toMatchSnapshot();
     expect(workflow.getDependencies("d")).toMatchSnapshot();
-    expect(await workflow.run({})).toMatchSnapshot();
+    expect(await workflow.run([])).toMatchSnapshot();
   });
   test("basic step", async () => {
     const workflow = WorkflowBuilder.create()
@@ -56,20 +56,20 @@ describe("Workflow", () => {
 
     expect(workflow.topologicalSort()).toMatchSnapshot();
     expect(workflow.getDependencies("d")).toMatchSnapshot();
-    const exec1 = await workflow.dryRun({});
+    const exec1 = await workflow.dryRun([]);
     expect(exec1.results).toMatchSnapshot();
     expect(exec1.results["c"]?.type).toBe("intr");
     expect(exec1.results["d"]?.type).toBe("pending");
 
-    const exec2 = await workflow.dryRun({
-      c: [{ k: "need_number", v: { x: 2 } }],
-    });
+    const exec2 = await workflow.dryRun([
+      { k: ["c", "need_number"], ts: +new Date(), v: { x: 2 } },
+    ]);
     expect(exec2.results).toMatchSnapshot();
     expect(exec2.results["c"]?.type).toBe("ok");
 
-    const exec3 = await workflow.dryRun({
-      c: [{ k: "need_number", v: { y: 2 } }],
-    });
+    const exec3 = await workflow.dryRun([
+      { k: ["c", "need_number"], ts: +new Date(), v: { y: 2 } },
+    ]);
     expect(exec3.results).toMatchSnapshot();
     expect(exec3.results["c"]?.type).toBe("err");
   });
@@ -84,7 +84,7 @@ describe("Workflow", () => {
       )
       .addNode({ key: "node3", deps: ["node2"] }, ({ get }) => get("node2") * 2)
       .build();
-    await workflow.run({});
+    await workflow.run([]);
   });
   test("waitUntil", async () => {
     const until = Date.now() + 10;
@@ -94,10 +94,10 @@ describe("Workflow", () => {
         return 1;
       })
       .build();
-    const res1 = await workflow.dryRun({});
+    const res1 = await workflow.dryRun([]);
     expect(res1.results.node1?.type).toBe("intr");
     await sleep(20);
-    const res2 = await workflow.dryRun({});
+    const res2 = await workflow.dryRun([]);
     expect(res2.results.node1?.type).toBe("ok");
   });
   test("sleep", async () => {
@@ -163,8 +163,9 @@ describe("Workflow", () => {
         ctx.capture({ key: "noop" }, () => 1),
       )
       .build();
-    const res = (await workflow.dryRun({ node1: [{ k: "nap", v: 2 }] })).results
-      .node1;
+    const res = (
+      await workflow.dryRun([{ k: ["node1", "nap"], ts: +new Date(), v: 2 }])
+    ).results.node1;
 
     expect(res?.type).toBe("err");
   });
@@ -210,9 +211,9 @@ describe("saga function", () => {
     if (result.node2?.type === "intr") {
       expect(result.node2?.value).toBe(20);
     }
-    const result2 = await workflow2.run({
-      node2: [{ k: "addition", v: 5 }],
-    });
+    const result2 = await workflow2.run([
+      { k: ["node2", "addition"], ts: +new Date(), v: 5 },
+    ]);
     expect(result2.node2?.type).toBe("intr");
     if (result2.node2?.type === "intr") {
       expect(result2.node2?.value).toBe(25);
@@ -246,9 +247,9 @@ describe("saga function", () => {
     expect(result1.node1?.type === "intr" && result1.node1.value).toBe(5);
     expect(result1.node2?.type === "ok" && result1.node2.value).toBe(10);
 
-    const result2 = await workflow.run({
-      node1: [{ k: "addition", v: 3 }],
-    });
+    const result2 = await workflow.run([
+      { k: ["node1", "addition"], ts: +new Date(), v: 3 },
+    ]);
     expect(result2.node1?.type).toBe("intr");
     expect(result2.node2?.type).toBe("ok");
     expect(result2.node1?.type).toBe("intr");
@@ -266,7 +267,7 @@ describe("saga function", () => {
       .build();
 
     try {
-      await workflow.run({}, { timeout: 100 });
+      await workflow.run([], { timeout: 100 });
     } catch (e) {
       if (e instanceof Error) {
         expect(e.message).toBe("Timeout");
@@ -353,7 +354,9 @@ describe("saga function", () => {
   test("supermemo", async () => {
     const workflow = learningWorkflow();
     await workflow.run();
-    const result = await workflow.run({ supermemo: [{ k: "review", v: 5 }] });
+    const result = await workflow.run([
+      { k: ["supermemo", "review"], ts: +new Date(), v: 5 },
+    ]);
     expect(result.supermemo?.type).toBe("intr");
     expect(
       result.supermemo?.type === "intr" &&
@@ -366,6 +369,7 @@ describe("saga function", () => {
     // const words = 1000;
     const days = 10 * 365;
     const words = 100;
+
     // const days = 30;
     const start = +Date.now();
     let current = start;
@@ -392,7 +396,7 @@ describe("saga function", () => {
         workflows.push(e);
         break;
       }
-      let res = await workflow.run({}, { now });
+      let res = await workflow.run([], { now });
 
       const grade = Math.round(
         // Math.random() * ((current - start) / ONE_DAY / days) * 5,
@@ -400,12 +404,14 @@ describe("saga function", () => {
       );
       if (
         res.supermemo?.type === "intr" &&
-        res.supermemo.step.key === "review"
+        res.supermemo.step.key[1] === "review"
       ) {
         reviews += 1;
         res = await workflow.run(
-          { supermemo: [{ k: "review", v: grade }] },
-          { now },
+          [{ k: ["supermemo", "review"], ts: current, v: grade }],
+          {
+            now,
+          },
         );
       }
       if (

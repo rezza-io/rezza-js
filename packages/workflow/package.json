@@ -1,7 +1,7 @@
 {
   "name": "@rezza.io/workflow",
   "description": "Durable Workflow Engine from rezza.io",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "module": "src/index.ts",
   "repository": {
     "type": "git",
@@ -24,6 +24,7 @@
     "@types/bun": "latest",
     "@types/eslint__js": "^8.42.3",
     "@types/lodash": "^4.17.9",
+    "@types/lodash-es": "^4.17.12",
     "dedent": "^1.5.3",
     "eslint": "^9.11.1",
     "eslint-config-prettier": "^9.1.0",
@@ -38,5 +39,8 @@
   },
   "peerDependencies": {
     "typescript": ">=4.7.4 <5.6.0"
+  },
+  "dependencies": {
+    "lodash-es": "^4.17.21"
   }
 }

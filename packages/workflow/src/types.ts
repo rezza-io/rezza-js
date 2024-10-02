@@ -1,6 +1,26 @@
 /**
  * Represents the context for a step in the workflow.
  */
+export interface FullStepContext {
+  /**
+   * The unique identifier for the step.
+   */
+  key: string[];
+
+  /**
+   * Optional description of the step.
+   */
+  description?: string;
+
+  /**
+   * Additional metadata for the step as key-value pairs.
+   */
+  extra?: Record<string, unknown>;
+}
+
+/**
+ * Represents the context for a step in the workflow.
+ */
 export interface StepContext {
   /**
    * The unique identifier for the step.

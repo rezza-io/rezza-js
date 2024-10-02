@@ -1,4 +1,10 @@
-import type { DAGNode, StepContext, WorkflowContext } from "./types";
+import { isEqual } from "lodash-es";
+import type {
+  DAGNode,
+  FullStepContext,
+  StepContext,
+  WorkflowContext,
+} from "./types";
 import { sleep } from "./utils";
 
 export interface RunOptions {
@@ -8,13 +14,14 @@ export interface RunOptions {
 
 class InputInterrupt extends Error {
   constructor(
-    public step: StepContext,
+    public step: FullStepContext,
     public schema?: object,
     public waitUntil?: number,
   ) {
     super(`Interrupt at ${step}`); // (1)
   }
 }
+
 class PromiseInterrupt extends Error {
   constructor(
     public step: string,
@@ -42,12 +49,18 @@ export type InterruptedValue = {
  * Represents an event that occurred during a workflow step.
  * This type is used to capture and store information about specific actions or data
  * produced during the execution of a workflow node.
- */
+ /**
+  * Represents an event that occurred during a workflow step.
+  * This type is used to capture and store information about specific actions or data
+  * produced during the execution of a workflow node.
+  */
 export type StepEvent = {
-  /* The key or name of the event. */
-  k: string;
+  /* The key or name of the event, represented as an array of strings. */
+  k: string[];
   /* The value associated with the event, which can be of any type. */
   v: unknown;
+  /* The timestamp of when the event occurred, represented as a number (milliseconds since epoch). */
+  ts: number;
 };
 
 /**
@@ -69,7 +82,7 @@ export type Result<T, Node extends string = string> =
   | { type: "pending"; nodes: Node[] }
   | { type: "ok"; value: T }
   | { type: "err"; error: Error }
-  | ({ type: "intr"; step: StepContext; value?: T; eventIdx?: number } & (
+  | ({ type: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
       | (InterruptedUntil & InterruptedValue) // timeout
@@ -106,6 +119,7 @@ export class Workflow<
   private tempRunOpts: RunOptions | null = null;
 
   private currentNode: keyof T | null = null;
+  private currentKeys: string[] = [];
 
   constructor(
     private nodes: T,
@@ -121,13 +135,20 @@ export class Workflow<
         : undefined;
   };
   step = <T>(context: StepContext, schema: object): T => {
-    throw new InputInterrupt(context, schema);
+    throw new InputInterrupt(
+      { ...context, key: [...this.currentKeys, context.key] },
+      schema,
+    );
   };
 
-  addTempEvent = (name: string, newEvent: unknown): void => {
+  addTempEvent = (key: string, newEvent: unknown): void => {
     // console.log("addTempNewEvent", newEvent);
     this.tempNewEvents![this.currentNode!] ||= [];
-    this.tempNewEvents![this.currentNode!]!.push({ k: name, v: newEvent });
+    this.tempNewEvents![this.currentNode!]!.push({
+      k: [...this.currentKeys, key],
+      v: newEvent,
+      ts: this.getNow(),
+    });
   };
 
   capture = <T>(context: StepContext, fn: () => T | Promise<T>): T => {
@@ -158,7 +179,7 @@ export class Workflow<
   waitUntil = (datetime: number, context?: Partial<StepContext>): void => {
     if (this.getNow() < datetime)
       throw new InputInterrupt(
-        { key: "waitUntil", ...context },
+        { ...context, key: [...this.currentKeys, "waitUntil"] },
         undefined,
         datetime,
       );
@@ -199,14 +220,18 @@ export class Workflow<
       this.step = <T>(context: StepContext, schema: object): T => {
         if (idx < allEvents?.length) {
           const event = allEvents[idx++];
-          if (event.k === context.key) {
+          if (isEqual(event.k, [...this.currentKeys, context.key])) {
             return event.v as T;
           } else {
             throw new Error(
-              `Expected event ${context.key} but got ${event.k} instead`,
+              `Expected event ${this.currentKeys}:${context.key} but got ${event.k} instead`,
             );
           }
-        } else throw new InputInterrupt(context, schema);
+        } else
+          throw new InputInterrupt(
+            { ...context, key: [...this.currentKeys, context.key] },
+            schema,
+          );
       };
       let value: T[K]["value"] | undefined = undefined;
       let eventIdx = 0;
@@ -294,20 +319,20 @@ export class Workflow<
   }
   isRunning = false;
 
-  executeNodes = async (incomingEvents: {
-    [K in keyof T]?: StepEvent[];
-  }): Promise<void> => {
+  executeNodes = async (incomingEvents: StepEvent[]): Promise<void> => {
     for (const node of this.topologicalSort()) {
       this.currentNode = node;
+      this.currentKeys.push(node as string);
       this.tempResults![node] = await this.executeNode(
         node,
-        incomingEvents[node] ?? [],
+        incomingEvents.filter((e) => e.k[0] === node),
       );
+      this.currentKeys.pop();
     }
   };
 
   async dryRun(
-    incomingEvents: { [K in keyof T]?: StepEvent[] },
+    incomingEvents: StepEvent[],
     opts?: RunOptions,
   ): Promise<{
     results: { [K in keyof T]?: Result<T[K]["value"]> };
@@ -341,22 +366,21 @@ export class Workflow<
   }
 
   async run(
-    incomingEvents?: { [K in keyof T]?: StepEvent[] },
+    incomingEvents?: StepEvent[],
     opts?: RunOptions,
   ): Promise<{ [K in keyof T]?: Result<T[K]["value"]> }> {
     const { newEvents, results, timeout } = await this.dryRun(
-      incomingEvents ?? {},
+      incomingEvents ?? [],
       opts,
     );
 
     if (timeout) throw new Error("Timeout");
 
     this.events ||= {};
-    for (const k in incomingEvents) {
-      this.events[k] = [
-        ...(this.events[k] ?? []),
-        ...(incomingEvents[k] ?? []),
-      ];
+    for (const e of incomingEvents ?? []) {
+      const k = e.k[0] as keyof T;
+      this.events[k] ||= [];
+      this.events[k]!.push(e);
     }
     for (const k in newEvents) {
       this.events[k] = [...(this.events[k] ?? []), ...(newEvents[k] ?? [])];
