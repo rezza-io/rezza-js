@@ -19,19 +19,19 @@ exports[`Workflow basic usage 2`] = `
 exports[`Workflow basic usage 3`] = `
 {
   "a": {
-    "type": "ok",
+    "status": "done",
     "value": 1,
   },
   "b": {
-    "type": "ok",
+    "status": "done",
     "value": "hello 1",
   },
   "c": {
-    "type": "ok",
+    "status": "done",
     "value": true,
   },
   "d": {
-    "type": "ok",
+    "status": "done",
     "value": {
       "flag": true,
       "value": 7,
@@ -59,11 +59,11 @@ exports[`Workflow basic step 2`] = `
 exports[`Workflow basic step 3`] = `
 {
   "a": {
-    "type": "ok",
+    "status": "done",
     "value": 1,
   },
   "b": {
-    "type": "ok",
+    "status": "done",
     "value": "hello 1",
   },
   "c": {
@@ -81,6 +81,7 @@ exports[`Workflow basic step 3`] = `
       ],
       "type": "object",
     },
+    "status": "intr",
     "step": {
       "description": "Enter a number",
       "key": [
@@ -88,13 +89,12 @@ exports[`Workflow basic step 3`] = `
         "need_number",
       ],
     },
-    "type": "intr",
   },
   "d": {
     "nodes": [
       "c",
     ],
-    "type": "pending",
+    "status": "pending",
   },
 }
 `;
@@ -102,19 +102,19 @@ exports[`Workflow basic step 3`] = `
 exports[`Workflow basic step 4`] = `
 {
   "a": {
-    "type": "ok",
+    "status": "done",
     "value": 1,
   },
   "b": {
-    "type": "ok",
+    "status": "done",
     "value": "hello 1",
   },
   "c": {
-    "type": "ok",
+    "status": "done",
     "value": true,
   },
   "d": {
-    "type": "ok",
+    "status": "done",
     "value": {
       "flag": true,
       "value": 7,
@@ -126,11 +126,11 @@ exports[`Workflow basic step 4`] = `
 exports[`Workflow basic step 5`] = `
 {
   "a": {
-    "type": "ok",
+    "status": "done",
     "value": 1,
   },
   "b": {
-    "type": "ok",
+    "status": "done",
     "value": "hello 1",
   },
   "c": {
@@ -145,13 +145,13 @@ exports[`Workflow basic step 5`] = `
     "message": "Required"
   }
 ]],
-    "type": "err",
+    "status": "err",
   },
   "d": {
     "nodes": [
       "c",
     ],
-    "type": "pending",
+    "status": "pending",
   },
 }
 `;

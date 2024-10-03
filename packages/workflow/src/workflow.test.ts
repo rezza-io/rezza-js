@@ -58,20 +58,20 @@ describe("Workflow", () => {
     expect(workflow.getDependencies("d")).toMatchSnapshot();
     const exec1 = await workflow.dryRun([]);
     expect(exec1.results).toMatchSnapshot();
-    expect(exec1.results["c"]?.type).toBe("intr");
-    expect(exec1.results["d"]?.type).toBe("pending");
+    expect(exec1.results["c"]?.status).toBe("intr");
+    expect(exec1.results["d"]?.status).toBe("pending");
 
     const exec2 = await workflow.dryRun([
       { k: ["c", "need_number"], ts: +new Date(), v: { x: 2 } },
     ]);
     expect(exec2.results).toMatchSnapshot();
-    expect(exec2.results["c"]?.type).toBe("ok");
+    expect(exec2.results["c"]?.status).toBe("done");
 
     const exec3 = await workflow.dryRun([
       { k: ["c", "need_number"], ts: +new Date(), v: { y: 2 } },
     ]);
     expect(exec3.results).toMatchSnapshot();
-    expect(exec3.results["c"]?.type).toBe("err");
+    expect(exec3.results["c"]?.status).toBe("err");
   });
   test("simple group", async () => {
     const workflow = WorkflowBuilder.create()
@@ -95,10 +95,10 @@ describe("Workflow", () => {
       })
       .build();
     const res1 = await workflow.dryRun([]);
-    expect(res1.results.node1?.type).toBe("intr");
+    expect(res1.results.node1?.status).toBe("intr");
     await sleep(20);
     const res2 = await workflow.dryRun([]);
-    expect(res2.results.node1?.type).toBe("ok");
+    expect(res2.results.node1?.status).toBe("done");
   });
   test("sleep", async () => {
     const workflow = WorkflowBuilder.create()
@@ -108,10 +108,10 @@ describe("Workflow", () => {
       })
       .build();
     const res1 = await workflow.run();
-    expect(res1.node1?.type).toBe("intr");
+    expect(res1.node1?.status).toBe("intr");
     await sleep(20);
     const res2 = await workflow.run();
-    expect(res2.node1?.type).toBe("ok");
+    expect(res2.node1?.status).toBe("done");
   });
   test("async capture", async () => {
     const workflow = WorkflowBuilder.create()
@@ -123,7 +123,7 @@ describe("Workflow", () => {
       )
       .build();
     const res2 = await workflow.run();
-    expect(res2.node1?.type).toBe("ok");
+    expect(res2.node1?.status).toBe("done");
   });
   test("async capture that throws", async () => {
     const workflow = WorkflowBuilder.create()
@@ -134,7 +134,7 @@ describe("Workflow", () => {
       )
       .build();
     const res2 = await workflow.run();
-    expect(res2.node1?.type).toBe("err");
+    expect(res2.node1?.status).toBe("err");
   });
 
   test("random function", async () => {
@@ -143,15 +143,15 @@ describe("Workflow", () => {
       .build();
 
     const result1 = await workflow.run();
-    expect(result1.randomValue?.type).toBe("ok");
-    if (result1.randomValue?.type === "ok") {
+    expect(result1.randomValue?.status).toBe("done");
+    if (result1.randomValue?.status === "done") {
       expect(typeof result1.randomValue?.value).toBe("number");
       expect(result1.randomValue?.value).toBeGreaterThanOrEqual(0);
       expect(result1.randomValue?.value).toBeLessThan(1);
 
       const result2 = await workflow.run();
-      expect(result2.randomValue?.type).toBe("ok");
-      if (result2.randomValue?.type === "ok") {
+      expect(result2.randomValue?.status).toBe("done");
+      if (result2.randomValue?.status === "done") {
         expect(result2.randomValue?.value).toBe(result1.randomValue?.value);
       }
     }
@@ -167,7 +167,7 @@ describe("Workflow", () => {
       await workflow.dryRun([{ k: ["node1", "nap"], ts: +new Date(), v: 2 }])
     ).results.node1;
 
-    expect(res?.type).toBe("err");
+    expect(res?.status).toBe("err");
   });
 });
 
@@ -183,8 +183,8 @@ describe("saga function", () => {
       .build();
 
     const result1 = await workflow.run();
-    expect(result1.node2?.type).toBe("ok");
-    if (result1.node2?.type === "ok") {
+    expect(result1.node2?.status).toBe("done");
+    if (result1.node2?.status === "done") {
       expect(result1.node2.value).toBe(16);
     }
   });
@@ -207,15 +207,15 @@ describe("saga function", () => {
       .build();
 
     const result = await workflow2.run();
-    expect(result.node2?.type).toBe("intr");
-    if (result.node2?.type === "intr") {
+    expect(result.node2?.status).toBe("intr");
+    if (result.node2?.status === "intr") {
       expect(result.node2?.value).toBe(20);
     }
     const result2 = await workflow2.run([
       { k: ["node2", "addition"], ts: +new Date(), v: 5 },
     ]);
-    expect(result2.node2?.type).toBe("intr");
-    if (result2.node2?.type === "intr") {
+    expect(result2.node2?.status).toBe("intr");
+    if (result2.node2?.status === "intr") {
       expect(result2.node2?.value).toBe(25);
     }
   });
@@ -242,20 +242,20 @@ describe("saga function", () => {
       .build();
 
     const result1 = await workflow.run();
-    expect(result1.node1?.type).toBe("intr");
-    expect(result1.node2?.type).toBe("ok");
-    expect(result1.node1?.type === "intr" && result1.node1.value).toBe(5);
-    expect(result1.node2?.type === "ok" && result1.node2.value).toBe(10);
+    expect(result1.node1?.status).toBe("intr");
+    expect(result1.node2?.status).toBe("done");
+    expect(result1.node1?.status === "intr" && result1.node1.value).toBe(5);
+    expect(result1.node2?.status === "done" && result1.node2.value).toBe(10);
 
     const result2 = await workflow.run([
       { k: ["node1", "addition"], ts: +new Date(), v: 3 },
     ]);
-    expect(result2.node1?.type).toBe("intr");
-    expect(result2.node2?.type).toBe("ok");
-    expect(result2.node1?.type).toBe("intr");
-    expect(result2.node2?.type).toBe("ok");
-    expect(result2.node1?.type === "intr" && result2.node1.value).toBe(8);
-    expect(result2.node2?.type === "ok" && result2.node2.value).toBe(16);
+    expect(result2.node1?.status).toBe("intr");
+    expect(result2.node2?.status).toBe("done");
+    expect(result2.node1?.status).toBe("intr");
+    expect(result2.node2?.status).toBe("done");
+    expect(result2.node1?.status === "intr" && result2.node1.value).toBe(8);
+    expect(result2.node2?.status === "done" && result2.node2.value).toBe(16);
   });
   test("saga without intr should timeout", async () => {
     const workflow = WorkflowBuilder.create()
@@ -357,9 +357,9 @@ describe("saga function", () => {
     const result = await workflow.run([
       { k: ["supermemo", "review"], ts: +new Date(), v: 5 },
     ]);
-    expect(result.supermemo?.type).toBe("intr");
+    expect(result.supermemo?.status).toBe("intr");
     expect(
-      result.supermemo?.type === "intr" &&
+      result.supermemo?.status === "intr" &&
         "waitUntil" in result.supermemo &&
         result.supermemo?.waitUntil &&
         Math.abs(result.supermemo?.waitUntil - (+Date.now() + ONE_DAY)),
@@ -403,7 +403,7 @@ describe("saga function", () => {
         (1 - Math.random() / (reviews / 2 + 1)) * 5,
       );
       if (
-        res.supermemo?.type === "intr" &&
+        res.supermemo?.status === "intr" &&
         res.supermemo.step.key[1] === "review"
       ) {
         reviews += 1;
@@ -415,7 +415,7 @@ describe("saga function", () => {
         );
       }
       if (
-        res.supermemo?.type === "intr" &&
+        res.supermemo?.status === "intr" &&
         "waitUntil" in res.supermemo &&
         res.supermemo.waitUntil
       ) {

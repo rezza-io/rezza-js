@@ -79,10 +79,10 @@ export type StepEvent = {
  *         a time-based condition or a need for additional input.
  */
 export type Result<T, Node extends string = string> =
-  | { type: "pending"; nodes: Node[] }
-  | { type: "ok"; value: T }
-  | { type: "err"; error: Error }
-  | ({ type: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
+  | { status: "pending"; nodes: Node[] }
+  | { status: "done"; value: T }
+  | { status: "err"; error: Error }
+  | ({ status: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
       | (InterruptedUntil & InterruptedValue) // timeout
@@ -107,7 +107,7 @@ export type Result<T, Node extends string = string> =
  * `now`, `sleep`, `waitUntil`, and `random`.
  */
 export class Workflow<
-  T extends Record<string, DAGNode<unknown, string>> = Record<never, unknown>,
+  T extends Record<string, DAGNode<unknown, string>>,
   G extends string = string,
 > implements WorkflowContext<T>
 {
@@ -128,9 +128,9 @@ export class Workflow<
 
   get = <K extends string>(key: K): T[K]["value"] => {
     const result = this.tempResults?.[key];
-    return result?.type === "ok"
+    return result?.status === "done"
       ? result.value
-      : result?.type === "intr"
+      : result?.status === "intr"
         ? result.value
         : undefined;
   };
@@ -198,13 +198,13 @@ export class Workflow<
     const pending = this.nodes[key].dependencies.filter((n) => {
       const result = this.tempResults?.[n];
       return !(
-        result?.type === "ok" ||
-        (result?.type === "intr" && result.value !== undefined)
+        result?.status === "done" ||
+        (result?.status === "intr" && result.value !== undefined)
       );
     });
 
     if (pending.length > 0) {
-      return { type: "pending", nodes: pending };
+      return { status: "pending", nodes: pending };
     }
 
     let idx = 0;
@@ -256,7 +256,7 @@ export class Workflow<
           }
         }
 
-        return { type: "ok", value: value };
+        return { status: "done", value: value };
       } catch (error) {
         if (error instanceof PromiseInterrupt) {
           try {
@@ -265,13 +265,14 @@ export class Workflow<
             this.addTempEvent(error.step, newEvent);
           } catch (error) {
             if (error instanceof Error) {
-              return { type: "err", error };
+              // console.log(error);
+              return { status: "err", error };
             }
-            return { type: "err", error: new Error("Unknown") };
+            return { status: "err", error: new Error("Unknown") };
           }
         } else if (error instanceof InputInterrupt) {
           return {
-            type: "intr",
+            status: "intr",
             step: error.step,
             schema: error.schema,
             ...(error.waitUntil ? { waitUntil: error.waitUntil } : {}),
@@ -280,16 +281,16 @@ export class Workflow<
           };
         } else {
           if (error instanceof Error) {
-            return { type: "err", error };
+            return { status: "err", error };
           }
-          return { type: "err", error: new Error("Unknown") };
+          return { status: "err", error: new Error("Unknown") };
         }
       } finally {
         this.step = originalStep;
       }
     }
     return {
-      type: "err",
+      status: "err",
       error: new Error("Too many promises in a single step!"),
     };
   }
@@ -387,7 +388,7 @@ export class Workflow<
     }
     for (const k in results) {
       const result = results[k];
-      if (result?.type === "intr" && result.eventIdx) {
+      if (result?.status === "intr" && result.eventIdx) {
         this.snapshots[k] = [result.eventIdx, result.value];
       }
     }
