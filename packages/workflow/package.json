@@ -1,15 +1,15 @@
 {
   "name": "@rezza.io/workflow",
   "description": "Durable Workflow Engine from rezza.io",
-  "version": "0.2.2",
-  "module": "src/index.ts",
+  "version": "0.2.3",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rezza-io/rezza-js.git",
     "directory": "packages/workflow"
   },
   "type": "module",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
