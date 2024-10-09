@@ -394,4 +394,13 @@ export class Workflow<
     }
     return results;
   }
+  spawn(): Workflow<T, G> {
+    return new Workflow(this.nodes, this.groups);
+  }
+  fork(): Workflow<T, G> {
+    const w = new Workflow(this.nodes, this.groups);
+    w.events = { ...this.events };
+    w.snapshots = { ...this.snapshots };
+    return w;
+  }
 }

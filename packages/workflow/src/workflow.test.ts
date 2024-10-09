@@ -426,4 +426,76 @@ describe("saga function", () => {
     expect(workflows.length).toBe(words);
     expect(reviews).toBeLessThanOrEqual(words * (1 + days));
   });
+  test("spawn", async () => {
+    const workflow = WorkflowBuilder.create()
+      .addNode({ key: "node1" }, () => 10)
+      .addNode(
+        { key: "node2", deps: ["node1"] },
+        ({ get }) => get("node1") * 2,
+        (ctx) => {
+          const schema = z.number();
+          const stepResult = ctx.step(
+            { key: "addition", description: "Enter a number for addition" },
+            zodToJsonSchema(schema),
+          );
+          return ["cont", schema.parse(stepResult) + ctx.get("node1") * 2];
+        },
+      )
+      .build();
+
+    const result = await workflow.run();
+    expect(result.node2?.status).toBe("intr");
+    if (result.node2?.status === "intr") {
+      expect(result.node2?.value).toBe(20);
+    }
+    const result2 = await workflow.run([
+      { k: ["node2", "addition"], ts: +new Date(), v: 5 },
+    ]);
+    expect(result2.node2?.status).toBe("intr");
+    if (result2.node2?.status === "intr") {
+      expect(result2.node2?.value).toBe(25);
+    }
+    const spawn = workflow.spawn();
+    const result3 = await spawn.run([]);
+    expect(result3.node2?.status).toBe("intr");
+    if (result3.node2?.status === "intr") {
+      expect(result3.node2?.value).toBe(20);
+    }
+  });
+  test("fork", async () => {
+    const workflow = WorkflowBuilder.create()
+      .addNode({ key: "node1" }, () => 10)
+      .addNode(
+        { key: "node2", deps: ["node1"] },
+        ({ get }) => get("node1") * 2,
+        (ctx) => {
+          const schema = z.number();
+          const stepResult = ctx.step(
+            { key: "addition", description: "Enter a number for addition" },
+            zodToJsonSchema(schema),
+          );
+          return ["cont", schema.parse(stepResult) + ctx.get("node1") * 2];
+        },
+      )
+      .build();
+
+    const result = await workflow.run();
+    expect(result.node2?.status).toBe("intr");
+    if (result.node2?.status === "intr") {
+      expect(result.node2?.value).toBe(20);
+    }
+    const result2 = await workflow.run([
+      { k: ["node2", "addition"], ts: +new Date(), v: 5 },
+    ]);
+    expect(result2.node2?.status).toBe("intr");
+    if (result2.node2?.status === "intr") {
+      expect(result2.node2?.value).toBe(25);
+    }
+    const fork = workflow.fork();
+    const result3 = await fork.run([]);
+    expect(result3.node2?.status).toBe("intr");
+    if (result3.node2?.status === "intr") {
+      expect(result3.node2?.value).toBe(25);
+    }
+  });
 });
