@@ -8,7 +8,6 @@
     "directory": "packages/workflow"
   },
   "type": "module",
-  "main": "src/index.ts",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -16,11 +15,14 @@
   ],
   "scripts": {
     "build": "tsc",
-    "lint": "eslint .",
+    "lint": "bun lint:es && bun lint:biome",
+    "lint:es": "eslint .",
+    "lint:biome": "biome check .",
     "test": "bun test",
     "publish:npm": "npm run lint && npm test && npm run build && npm publish --access public"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.3",
     "@types/bun": "latest",
     "@types/eslint__js": "^8.42.3",
     "@types/lodash": "^4.17.9",

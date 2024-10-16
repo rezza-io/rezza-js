@@ -85,7 +85,8 @@ export type Result<T, Node extends string = string> =
   | ({ status: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
-      | (InterruptedUntil & InterruptedValue) // timeout
+      | (InterruptedUntil &
+          InterruptedValue) // timeout
     ));
 
 /**
@@ -222,16 +223,15 @@ export class Workflow<
           const event = allEvents[idx++];
           if (isEqual(event.k, [...this.currentKeys, context.key])) {
             return event.v as T;
-          } else {
-            throw new Error(
-              `Expected event ${this.currentKeys}:${context.key} but got ${event.k} instead`,
-            );
           }
-        } else
-          throw new InputInterrupt(
-            { ...context, key: [...this.currentKeys, context.key] },
-            schema,
+          throw new Error(
+            `Expected event ${this.currentKeys}:${context.key} but got ${event.k} instead`,
           );
+        }
+        throw new InputInterrupt(
+          { ...context, key: [...this.currentKeys, context.key] },
+          schema,
+        );
       };
       let value: T[K]["value"] | undefined = undefined;
       let eventIdx = 0;
@@ -336,7 +336,7 @@ export class Workflow<
     incomingEvents: StepEvent[],
     opts?: RunOptions,
   ): Promise<{
-    results: { [K in keyof T]?: Result<T[K]["value"]> };
+    values: { [K in keyof T]?: Result<T[K]["value"]> };
     newEvents: { [K in keyof T]?: StepEvent[] };
     timeout: boolean;
   }> {
@@ -363,17 +363,18 @@ export class Workflow<
     this.tempResults = null;
     this.tempNewEvents = null;
     this.isRunning = false;
-    return { results, newEvents, timeout };
+    return { values: results, newEvents, timeout };
   }
 
   async run(
     incomingEvents?: StepEvent[],
     opts?: RunOptions,
   ): Promise<{ [K in keyof T]?: Result<T[K]["value"]> }> {
-    const { newEvents, results, timeout } = await this.dryRun(
-      incomingEvents ?? [],
-      opts,
-    );
+    const {
+      newEvents,
+      values: results,
+      timeout,
+    } = await this.dryRun(incomingEvents ?? [], opts);
 
     if (timeout) throw new Error("Timeout");
 

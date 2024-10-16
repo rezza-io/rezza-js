@@ -1,8 +1,8 @@
 import js from "@eslint/js";
+import prettier from "eslint-plugin-prettier";
+import tsdoc from "eslint-plugin-tsdoc";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-import tsdoc from "eslint-plugin-tsdoc";
-import prettier from "eslint-plugin-prettier";
 
 export default tseslint.config(
   { ignores: ["dist"] },

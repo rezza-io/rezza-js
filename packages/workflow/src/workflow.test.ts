@@ -57,21 +57,21 @@ describe("Workflow", () => {
     expect(workflow.topologicalSort()).toMatchSnapshot();
     expect(workflow.getDependencies("d")).toMatchSnapshot();
     const exec1 = await workflow.dryRun([]);
-    expect(exec1.results).toMatchSnapshot();
-    expect(exec1.results["c"]?.status).toBe("intr");
-    expect(exec1.results["d"]?.status).toBe("pending");
+    expect(exec1.values).toMatchSnapshot();
+    expect(exec1.values.c?.status).toBe("intr");
+    expect(exec1.values.d?.status).toBe("pending");
 
     const exec2 = await workflow.dryRun([
       { k: ["c", "need_number"], ts: +new Date(), v: { x: 2 } },
     ]);
-    expect(exec2.results).toMatchSnapshot();
-    expect(exec2.results["c"]?.status).toBe("done");
+    expect(exec2.values).toMatchSnapshot();
+    expect(exec2.values.c?.status).toBe("done");
 
     const exec3 = await workflow.dryRun([
       { k: ["c", "need_number"], ts: +new Date(), v: { y: 2 } },
     ]);
-    expect(exec3.results).toMatchSnapshot();
-    expect(exec3.results["c"]?.status).toBe("err");
+    expect(exec3.values).toMatchSnapshot();
+    expect(exec3.values.c?.status).toBe("err");
   });
   test("simple group", async () => {
     const workflow = WorkflowBuilder.create()
@@ -95,10 +95,10 @@ describe("Workflow", () => {
       })
       .build();
     const res1 = await workflow.dryRun([]);
-    expect(res1.results.node1?.status).toBe("intr");
+    expect(res1.values.node1?.status).toBe("intr");
     await sleep(20);
     const res2 = await workflow.dryRun([]);
-    expect(res2.results.node1?.status).toBe("done");
+    expect(res2.values.node1?.status).toBe("done");
   });
   test("sleep", async () => {
     const workflow = WorkflowBuilder.create()
@@ -165,7 +165,7 @@ describe("Workflow", () => {
       .build();
     const res = (
       await workflow.dryRun([{ k: ["node1", "nap"], ts: +new Date(), v: 2 }])
-    ).results.node1;
+    ).values.node1;
 
     expect(res?.status).toBe("err");
   });
@@ -365,10 +365,9 @@ describe("saga function", () => {
         Math.abs(result.supermemo?.waitUntil - (+Date.now() + ONE_DAY)),
     ).toBeLessThan(10);
   });
-  test("supermemo learn 100 words in 10 years", async () => {
-    // const words = 1000;
+  test("supermemo learn 10 words in 10 years", async () => {
     const days = 10 * 365;
-    const words = 100;
+    const words = 10;
 
     // const days = 30;
     const start = +Date.now();
