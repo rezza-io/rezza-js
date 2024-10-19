@@ -248,7 +248,7 @@ export class Workflow<
           while (true) {
             eventIdx = idx;
             const [action, newValue] = node.saga(this, value);
-            await sleep(0);
+            if (this.tempRunOpts?.timeout) await sleep(0);
             value = newValue;
             if (action === "halt") {
               break;
@@ -350,12 +350,18 @@ export class Workflow<
 
     let timeout = false;
 
-    await Promise.race([
-      this.executeNodes(incomingEvents),
-      sleep(opts?.timeout ?? 1000).then(() => {
-        timeout = true;
-      }),
-    ]);
+    const executionPromise = this.executeNodes(incomingEvents);
+
+    if (opts?.timeout) {
+      await Promise.race([
+        executionPromise,
+        sleep(opts?.timeout ?? 1000).then(() => {
+          timeout = true;
+        }),
+      ]);
+    } else {
+      await executionPromise;
+    }
 
     const results = this.tempResults;
     const newEvents = this.tempNewEvents;
