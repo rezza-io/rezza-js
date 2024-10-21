@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1] - 2024-10-22
+
+### Changed
+- Updated TypeBox import to use the more specific path `@sinclair/typebox/type` for better tree-shaking.
+
+
 ## [0.3.0] - 2024-10-21
 
 ### Added
