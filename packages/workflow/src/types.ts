@@ -23,7 +23,7 @@ export interface FullStepContext {
 /**
  * Represents the context for a step in the workflow.
  */
-export interface StepContext {
+export interface StepContext<T = unknown> {
   /**
    * The unique identifier for the step.
    */
@@ -39,7 +39,7 @@ export interface StepContext {
    */
   extra?: Record<string, unknown>;
 
-  schema: object;
+  schema: { static: T };
 }
 
 /**

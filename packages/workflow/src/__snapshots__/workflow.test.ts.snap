@@ -145,3 +145,60 @@ exports[`Workflow basic step 5`] = `
   },
 }
 `;
+
+exports[`saga function should should tell which events are consumed and ignore irrelavent events 1`] = `
+[
+  [
+    {
+      "firstNumber": 3,
+      "secondNumber": 4,
+    },
+    {
+      [Symbol(TypeBox.Kind)]: "Object",
+      "properties": {
+        "firstNumber": {
+          [Symbol(TypeBox.Kind)]: "Number",
+          "description": "First number",
+          "type": "number",
+        },
+        "secondNumber": {
+          [Symbol(TypeBox.Kind)]: "Number",
+          "description": "Second number",
+          "type": "number",
+        },
+      },
+      "required": [
+        "firstNumber",
+        "secondNumber",
+      ],
+      "type": "object",
+    },
+  ],
+  [
+    {
+      "firstNumber": 2,
+      "secondNumber": 3,
+    },
+    {
+      [Symbol(TypeBox.Kind)]: "Object",
+      "properties": {
+        "firstNumber": {
+          [Symbol(TypeBox.Kind)]: "Number",
+          "description": "First number",
+          "type": "number",
+        },
+        "secondNumber": {
+          [Symbol(TypeBox.Kind)]: "Number",
+          "description": "Second number",
+          "type": "number",
+        },
+      },
+      "required": [
+        "firstNumber",
+        "secondNumber",
+      ],
+      "type": "object",
+    },
+  ],
+]
+`;

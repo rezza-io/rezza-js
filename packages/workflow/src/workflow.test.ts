@@ -553,4 +553,55 @@ describe("saga function", () => {
       expect(result3.node2?.value).toBe(25);
     }
   });
+  test("should should tell which events are consumed and ignore irrelavent events", async () => {
+    const schema = t.Object({
+      firstNumber: t.Number({ description: "First number" }),
+      secondNumber: t.Number({ description: "Second number" }),
+    });
+
+    const workflow = WorkflowBuilder.create()
+      .addNode(
+        { key: "input", schema },
+        () => ({ firstNumber: 0, secondNumber: 0 }),
+        (ctx) => {
+          const res = parse(
+            schema,
+            ctx.step({ key: "numbers", description: "Enter new pair", schema }),
+          );
+          return ["cont", res] as const;
+        },
+      )
+      .addNode(
+        { key: "sum", deps: ["input"], schema: t.Number() },
+        ({ get }) => get("input").firstNumber + get("input").secondNumber,
+      )
+      .build();
+
+    const res = await workflow.dryRun([
+      {
+        k: ["sum", "numbers"],
+        v: { firstNumber: 3, secondNumber: 4 },
+        ts: Date.now(),
+      },
+      {
+        k: ["other", "numbers"],
+        v: { firstNumber: 3, secondNumber: 4 },
+        ts: Date.now(),
+      },
+      {
+        k: ["input", "numbers"],
+        v: { firstNumber: 3, secondNumber: 4 },
+        ts: Date.now(),
+      },
+      {
+        k: ["input", "numbers"],
+        v: { firstNumber: 2, secondNumber: 3 },
+        ts: Date.now(),
+      },
+    ]);
+    // console.log(res);
+    expect(res.newEvents).toHaveLength(2);
+    expect(res.values.sum?.status === "done" && res.values.sum.value).toBe(5);
+    expect(res.newEvents.map((e) => [e.v, e.s])).toMatchSnapshot();
+  });
 });

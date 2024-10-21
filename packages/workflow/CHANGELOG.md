@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.1] - 2024-10-21
+
+### Added
+- Introduced `StepEventWithSchema` type for improved event handling
+- Added `newConsumedEvents` to track consumed events during workflow execution
+- Created a new `sum.ts` example in the `examples` directory
+
+### Changed
+- Updated `Workflow.dryRun` to return consumed events instead of all new events
+- Modified `Workflow.addTempEvent` to include schema information
+- Refactored `Workflow.step` to use `StepEventWithSchema`
+- Updated `PromiseInterrupt` to include schema information
+
+### Fixed
+- Improved event consumption logic to ignore irrelevant events
+- Enhanced type safety for `StepContext` using generic type parameter
+
+### Developer Experience
+- Added new test case for event consumption in `workflow.test.ts`
+- Updated snapshots to reflect changes in event handling
+
 ## [0.4.0] - 2024-10-21
 
 ### Added

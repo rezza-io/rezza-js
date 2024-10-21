@@ -26,6 +26,7 @@ class PromiseInterrupt extends Error {
   constructor(
     public step: string,
     public promise: Promise<unknown>,
+    public schema: object,
   ) {
     super(`Interrupt at ${step}`); // (1)
   }
@@ -54,14 +55,18 @@ export type InterruptedValue = {
   * This type is used to capture and store information about specific actions or data
   * produced during the execution of a workflow node.
   */
-export type StepEvent = {
+export type StepEventWithSchema = {
   /* The key or name of the event, represented as an array of strings. */
   k: string[];
   /* The value associated with the event, which can be of any type. */
   v: unknown;
   /* The timestamp of when the event occurred, represented as a number (milliseconds since epoch). */
   ts: number;
+  /* The schema of the value associated with the event */
+  s: object;
 };
+
+export type StepEvent = Omit<StepEventWithSchema, "s">;
 
 /**
  * Represents the result of a workflow node execution.
@@ -116,7 +121,9 @@ export class Workflow<
   private snapshots: { [K in keyof T]?: [number, T[K]["value"]] } = {};
 
   private tempResults: { [K in keyof T]?: Result<T[K]["value"]> } | null = null;
-  private tempNewEvents: { [K in keyof T]?: StepEvent[] } | null = null;
+  private tempNewEvents: { [K in keyof T]?: StepEventWithSchema[] } | null =
+    null;
+  private newConsumedEvents: StepEventWithSchema[] | null = null;
   private tempRunOpts: RunOptions | null = null;
 
   private currentNode: keyof T | null = null;
@@ -135,6 +142,7 @@ export class Workflow<
         ? result.value
         : undefined;
   };
+
   step = <T>(context: StepContext): T => {
     throw new InputInterrupt({
       ...context,
@@ -142,14 +150,16 @@ export class Workflow<
     });
   };
 
-  addTempEvent = (key: string, newEvent: unknown): void => {
-    // console.log("addTempNewEvent", newEvent);
-    this.tempNewEvents![this.currentNode!] ||= [];
-    this.tempNewEvents![this.currentNode!]!.push({
+  addTempEvent = (key: string, newEvent: unknown, schema: object): void => {
+    const event: StepEventWithSchema = {
       k: [...this.currentKeys, key],
       v: newEvent,
+      s: schema,
       ts: this.getNow(),
-    });
+    };
+    this.tempNewEvents![this.currentNode!] ||= [];
+    this.tempNewEvents![this.currentNode!]!.push(event);
+    this.newConsumedEvents?.push(event);
   };
 
   capture = <T>(context: StepContext, fn: () => T | Promise<T>): T => {
@@ -160,9 +170,9 @@ export class Workflow<
       if (e instanceof InputInterrupt) {
         const newEvent = fn();
         if (newEvent instanceof Promise) {
-          throw new PromiseInterrupt(stepKey, newEvent);
+          throw new PromiseInterrupt(stepKey, newEvent, context.schema);
         }
-        this.addTempEvent(stepKey, newEvent);
+        this.addTempEvent(stepKey, newEvent, context.schema);
         return newEvent;
       }
       throw e;
@@ -225,6 +235,7 @@ export class Workflow<
       this.step = <T>(context: StepContext): T => {
         if (idx < allEvents?.length) {
           const event = allEvents[idx++];
+          this.newConsumedEvents?.push({ ...event, s: context.schema });
           if (isEqual(event.k, [...this.currentKeys, context.key])) {
             return event.v as T;
           }
@@ -266,7 +277,7 @@ export class Workflow<
           try {
             const newEvent = await error.promise;
             promiseCount += 1;
-            this.addTempEvent(error.step, newEvent);
+            this.addTempEvent(error.step, newEvent, error.schema);
           } catch (error) {
             if (error instanceof Error) {
               // console.log(error);
@@ -365,7 +376,7 @@ export class Workflow<
     opts?: RunOptions,
   ): Promise<{
     values: { [K in keyof T]?: Result<T[K]["value"]> };
-    newEvents: { [K in keyof T]?: StepEvent[] };
+    newEvents: StepEventWithSchema[];
     timeout: boolean;
   }> {
     if (this.isRunning) {
@@ -374,6 +385,7 @@ export class Workflow<
     this.isRunning = true;
     this.tempResults = {};
     this.tempNewEvents = {};
+    this.newConsumedEvents = [];
     this.tempRunOpts = opts ?? null;
 
     let timeout = false;
@@ -392,7 +404,8 @@ export class Workflow<
     }
 
     const results = this.tempResults;
-    const newEvents = this.tempNewEvents;
+    const newEvents = this.newConsumedEvents;
+    this.newConsumedEvents = null;
     this.tempRunOpts = null;
     this.tempResults = null;
     this.tempNewEvents = null;
@@ -413,13 +426,10 @@ export class Workflow<
     if (timeout) throw new Error("Timeout");
 
     this.events ||= {};
-    for (const e of incomingEvents ?? []) {
-      const k = e.k[0] as keyof T;
-      this.events[k] ||= [];
-      this.events[k]!.push(e);
-    }
-    for (const k in newEvents) {
-      this.events[k] = [...(this.events[k] ?? []), ...(newEvents[k] ?? [])];
+    for (const e of newEvents) {
+      const node = e.k[0] as keyof T;
+      this.events[node] ||= [];
+      this.events[e.k[0]]!.push(e);
     }
     for (const k in results) {
       const result = results[k];
