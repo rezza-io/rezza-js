@@ -2,21 +2,34 @@ import { describe, expect, test } from "bun:test";
 import dedent from "dedent";
 import { Heap } from "heap-js";
 import _ from "lodash";
-import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
+import sleepWorkflow from "../examples/sleep";
+import { RandomSchema } from "./schemas";
 import { sleep } from "./utils";
-import { WorkflowBuilder } from "./workflow-builder";
+import { parse, t, WorkflowBuilder } from ".";
 
 describe("Workflow", () => {
   test("basic usage", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "a", deps: [] }, () => 1)
-      .addNode({ key: "b", deps: ["a"] }, ({ get }) => `hello ${get("a")}`)
-      .addNode({ key: "c", deps: ["a"] }, ({ get }) => get("a") > 0)
-      .addNode({ key: "d", deps: ["b", "c"] }, ({ get }) => ({
-        value: get("b").length,
-        flag: get("c"),
-      }))
+      .addNode({ key: "a", deps: [], schema: t.Number() }, () => 1)
+      .addNode(
+        { key: "b", deps: ["a"], schema: t.String() },
+        ({ get }) => `hello ${get("a")}`,
+      )
+      .addNode(
+        { key: "c", deps: ["a"], schema: t.Boolean() },
+        ({ get }) => get("a") > 0,
+      )
+      .addNode(
+        {
+          key: "d",
+          deps: ["b", "c"],
+          schema: t.Object({ value: t.Number(), flag: t.Boolean() }),
+        },
+        ({ get }) => ({
+          value: get("b").length,
+          flag: get("c"),
+        }),
+      )
       .build();
 
     // TypeScript infers the correct types
@@ -28,27 +41,44 @@ describe("Workflow", () => {
   });
   test("basic step", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "a", deps: [] }, () => 1)
-      .addNode({ key: "b", deps: ["a"] }, ({ get }) => `hello ${get("a")}`)
-      .addNode({ key: "c", deps: ["a"] }, ({ get, step }) => {
-        const schema = z.object({ x: z.number().describe("sweet number") });
-        const { x } = schema.parse(
-          step(
-            {
+      .addNode({ key: "a", deps: [], schema: t.Number() }, () => 1)
+      .addNode(
+        { key: "b", deps: ["a"], schema: t.String() },
+        ({ get }) => `hello ${get("a")}`,
+      )
+      .addNode(
+        { key: "c", deps: ["a"], schema: t.Boolean() },
+        ({ get, step }) => {
+          const schema = t.Object({
+            x: t.Number({ title: "sweet number" }),
+          });
+          const { x } = parse(
+            schema,
+            step({
               key: "need_number",
               description: dedent`
               Enter a number
               `,
-            },
-            zodToJsonSchema(schema),
-          ),
-        );
-        return get("a") + x > 0;
-      })
-      .addNode({ key: "d", deps: ["b", "c"] }, ({ get }) => ({
-        value: get("b").length,
-        flag: get("c"),
-      }))
+              schema,
+            }),
+          );
+          return get("a") + x > 0;
+        },
+      )
+      .addNode(
+        {
+          key: "d",
+          deps: ["b", "c"],
+          schema: t.Object({
+            value: t.Number(),
+            flag: t.Boolean(),
+          }),
+        },
+        ({ get }) => ({
+          value: get("b").length,
+          flag: get("c"),
+        }),
+      )
       .build();
 
     // TypeScript infers the correct types
@@ -62,13 +92,13 @@ describe("Workflow", () => {
     expect(exec1.values.d?.status).toBe("pending");
 
     const exec2 = await workflow.dryRun([
-      { k: ["c", "need_number"], ts: +new Date(), v: { x: 2 } },
+      { k: ["c", "need_number"], ts: Date.now(), v: { x: 2 } },
     ]);
     expect(exec2.values).toMatchSnapshot();
     expect(exec2.values.c?.status).toBe("done");
 
     const exec3 = await workflow.dryRun([
-      { k: ["c", "need_number"], ts: +new Date(), v: { y: 2 } },
+      { k: ["c", "need_number"], ts: Date.now(), v: { y: 2 } },
     ]);
     expect(exec3.values).toMatchSnapshot();
     expect(exec3.values.c?.status).toBe("err");
@@ -76,20 +106,28 @@ describe("Workflow", () => {
   test("simple group", async () => {
     const workflow = WorkflowBuilder.create()
       .addGroup("groupA")
-      .addNode({ key: "node1", group: "groupA" }, () => 1)
+      .addNode({ key: "node1", group: "groupA", schema: t.Number() }, () => 1)
       .addGroup("groupB")
       .addNode(
-        { key: "node2", group: "groupB", deps: ["node1"] },
+        {
+          key: "node2",
+          group: "groupB",
+          deps: ["node1"],
+          schema: t.Number(),
+        },
         ({ get }) => get("node1") + 1,
       )
-      .addNode({ key: "node3", deps: ["node2"] }, ({ get }) => get("node2") * 2)
+      .addNode(
+        { key: "node3", deps: ["node2"], schema: t.Number() },
+        ({ get }) => get("node2") * 2,
+      )
       .build();
     await workflow.run([]);
   });
   test("waitUntil", async () => {
     const until = Date.now() + 10;
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, ({ waitUntil }) => {
+      .addNode({ key: "node1", schema: t.Number() }, ({ waitUntil }) => {
         waitUntil(until);
         return 1;
       })
@@ -101,22 +139,19 @@ describe("Workflow", () => {
     expect(res2.values.node1?.status).toBe("done");
   });
   test("sleep", async () => {
-    const workflow = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, (ctx) => {
-        ctx.sleep(10);
-        return 1;
-      })
-      .build();
-    const res1 = await workflow.run();
-    expect(res1.node1?.status).toBe("intr");
+    const workflow = sleepWorkflow.spawn();
+    const res1 = await workflow.run([
+      { k: ["decide", "enter_duration"], v: { duration: 10 }, ts: Date.now() },
+    ]);
+    expect(res1.wake_up?.status).toBe("intr");
     await sleep(20);
     const res2 = await workflow.run();
-    expect(res2.node1?.status).toBe("done");
+    expect(res2.wake_up?.status).toBe("done");
   });
   test("async capture", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, (ctx) =>
-        ctx.capture({ key: "noop" }, async () => {
+      .addNode({ key: "node1", schema: t.Number() }, (ctx) =>
+        ctx.capture({ key: "noop", schema: t.Number() }, async () => {
           await sleep(10);
           return 1;
         }),
@@ -127,8 +162,8 @@ describe("Workflow", () => {
   });
   test("async capture that throws", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, (ctx) =>
-        ctx.capture({ key: "noop" }, async () => {
+      .addNode({ key: "node1", schema: t.Any() }, (ctx) =>
+        ctx.capture({ key: "noop", schema: t.Any() }, async () => {
           throw new Error("oops");
         }),
       )
@@ -139,7 +174,9 @@ describe("Workflow", () => {
 
   test("random function", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "randomValue" }, ({ random }) => random())
+      .addNode({ key: "randomValue", schema: RandomSchema }, ({ random }) =>
+        random(),
+      )
       .build();
 
     const result1 = await workflow.run();
@@ -156,15 +193,14 @@ describe("Workflow", () => {
       }
     }
   });
-
   test("check step name", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, (ctx): number =>
-        ctx.capture({ key: "noop" }, () => 1),
+      .addNode({ key: "node1", schema: t.Number() }, (ctx): number =>
+        ctx.capture({ key: "noop", schema: t.Number() }, () => 1),
       )
       .build();
     const res = (
-      await workflow.dryRun([{ k: ["node1", "nap"], ts: +new Date(), v: 2 }])
+      await workflow.dryRun([{ k: ["node1", "nap"], ts: Date.now(), v: 2 }])
     ).values.node1;
 
     expect(res?.status).toBe("err");
@@ -174,11 +210,12 @@ describe("Workflow", () => {
 describe("saga function", () => {
   test("finite without intr", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, () => 5)
+      .addNode({ key: "node1", schema: t.Number() }, () => 5)
       .addNode(
-        { key: "node2", deps: ["node1"] },
+        { key: "node2", deps: ["node1"], schema: t.Number() },
         ({ get }) => get("node1") * 2,
-        (ctx, value) => (value > 15 ? ["halt", value] : ["cont", value + 1]),
+        (ctx, value: number) =>
+          value > 15 ? ["halt", value] : ["cont", value + 1],
       )
       .build();
 
@@ -191,17 +228,18 @@ describe("saga function", () => {
 
   test("infinite", async () => {
     const workflow2 = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, () => 10)
+      .addNode({ key: "node1", schema: t.Number() }, () => 10)
       .addNode(
-        { key: "node2", deps: ["node1"] },
+        { key: "node2", deps: ["node1"], schema: t.Number() },
         ({ get }) => get("node1") * 2,
         (ctx) => {
-          const schema = z.number();
-          const stepResult = ctx.step(
-            { key: "addition", description: "Enter a number for addition" },
-            zodToJsonSchema(schema),
-          );
-          return ["cont", schema.parse(stepResult) + ctx.get("node1") * 2];
+          const schema = t.Number();
+          const stepResult = ctx.step({
+            key: "addition",
+            description: "Enter a number for addition",
+            schema: schema,
+          });
+          return ["cont", parse(schema, stepResult) + ctx.get("node1") * 2];
         },
       )
       .build();
@@ -212,7 +250,7 @@ describe("saga function", () => {
       expect(result.node2?.value).toBe(20);
     }
     const result2 = await workflow2.run([
-      { k: ["node2", "addition"], ts: +new Date(), v: 5 },
+      { k: ["node2", "addition"], ts: Date.now(), v: 5 },
     ]);
     expect(result2.node2?.status).toBe("intr");
     if (result2.node2?.status === "intr") {
@@ -223,22 +261,27 @@ describe("saga function", () => {
   test("depends on a saga with intr", async () => {
     const workflow = WorkflowBuilder.create()
       .addNode(
-        { key: "node1" },
+        { key: "node1", schema: t.Number() },
         (): number => 5,
         (ctx, value) => {
-          const schema = z.number();
+          const schema = t.Number();
           return [
             "cont",
-            schema.parse(
-              ctx.step(
-                { key: "addition", description: "Enter a number for addition" },
-                zodToJsonSchema(schema),
-              ),
+            parse(
+              schema,
+              ctx.step({
+                key: "addition",
+                description: "Enter a number for addition",
+                schema,
+              }),
             ) + value,
           ];
         },
       )
-      .addNode({ key: "node2", deps: ["node1"] }, ({ get }) => get("node1") * 2)
+      .addNode(
+        { key: "node2", deps: ["node1"], schema: t.Number() },
+        ({ get }) => get("node1") * 2,
+      )
       .build();
 
     const result1 = await workflow.run();
@@ -248,7 +291,7 @@ describe("saga function", () => {
     expect(result1.node2?.status === "done" && result1.node2.value).toBe(10);
 
     const result2 = await workflow.run([
-      { k: ["node1", "addition"], ts: +new Date(), v: 3 },
+      { k: ["node1", "addition"], ts: Date.now(), v: 3 },
     ]);
     expect(result2.node1?.status).toBe("intr");
     expect(result2.node2?.status).toBe("done");
@@ -260,7 +303,7 @@ describe("saga function", () => {
   test("saga without intr should timeout", async () => {
     const workflow = WorkflowBuilder.create()
       .addNode(
-        { key: "node1" },
+        { key: "node1", schema: t.Number() },
         (): number => 0,
         (ctx, value) => ["cont", value + 1],
       )
@@ -321,29 +364,36 @@ describe("saga function", () => {
         efactor: nextEfactor,
       };
     }
-
-    const gradeSchema = z.union([
-      z.literal(0),
-      z.literal(1),
-      z.literal(2),
-      z.literal(3),
-      z.literal(4),
-      z.literal(5),
+    const gradeSchema = t.Union([
+      t.Literal(0),
+      t.Literal(1),
+      t.Literal(2),
+      t.Literal(3),
+      t.Literal(4),
+      t.Literal(5),
     ]);
     return WorkflowBuilder.create()
       .addNode(
-        { key: "supermemo" },
+        {
+          key: "supermemo",
+          schema: t.Object({
+            interval: t.Number(),
+            repetition: t.Number(),
+            efactor: t.Number(),
+          }),
+        },
         (): SuperMemoItem => ({
           interval: 0,
           repetition: 0,
           efactor: 2.5,
         }),
         (ctx, item) => {
-          const reviewResult = ctx.step(
-            { key: "review", description: "Review the item" },
-            zodToJsonSchema(gradeSchema),
-          );
-          const grade = gradeSchema.parse(reviewResult);
+          const reviewResult = ctx.step({
+            key: "review",
+            description: "Review the item",
+            schema: gradeSchema,
+          });
+          const grade = parse(gradeSchema, reviewResult);
           const newItem = supermemo(item, grade);
           ctx.sleep(newItem.interval * ONE_DAY);
           return ["cont", newItem];
@@ -355,7 +405,7 @@ describe("saga function", () => {
     const workflow = learningWorkflow();
     await workflow.run();
     const result = await workflow.run([
-      { k: ["supermemo", "review"], ts: +new Date(), v: 5 },
+      { k: ["supermemo", "review"], ts: Date.now(), v: 5 },
     ]);
     expect(result.supermemo?.status).toBe("intr");
     expect(
@@ -427,17 +477,22 @@ describe("saga function", () => {
   });
   test("spawn", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, () => 10)
+      .addNode({ key: "node1", schema: t.Number() }, () => 10)
       .addNode(
-        { key: "node2", deps: ["node1"] },
+        {
+          key: "node2",
+          deps: ["node1"],
+          schema: t.Number(),
+        },
         ({ get }) => get("node1") * 2,
         (ctx) => {
-          const schema = z.number();
-          const stepResult = ctx.step(
-            { key: "addition", description: "Enter a number for addition" },
-            zodToJsonSchema(schema),
-          );
-          return ["cont", schema.parse(stepResult) + ctx.get("node1") * 2];
+          const schema = t.Number();
+          const stepResult = ctx.step({
+            key: "addition",
+            description: "Enter a number for addition",
+            schema: schema,
+          });
+          return ["cont", parse(t.Number(), stepResult) + ctx.get("node1") * 2];
         },
       )
       .build();
@@ -448,7 +503,7 @@ describe("saga function", () => {
       expect(result.node2?.value).toBe(20);
     }
     const result2 = await workflow.run([
-      { k: ["node2", "addition"], ts: +new Date(), v: 5 },
+      { k: ["node2", "addition"], ts: Date.now(), v: 5 },
     ]);
     expect(result2.node2?.status).toBe("intr");
     if (result2.node2?.status === "intr") {
@@ -463,17 +518,18 @@ describe("saga function", () => {
   });
   test("fork", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "node1" }, () => 10)
+      .addNode({ key: "node1", schema: t.Number() }, () => 10)
       .addNode(
-        { key: "node2", deps: ["node1"] },
+        { key: "node2", deps: ["node1"], schema: t.Number() },
         ({ get }) => get("node1") * 2,
         (ctx) => {
-          const schema = z.number();
-          const stepResult = ctx.step(
-            { key: "addition", description: "Enter a number for addition" },
-            zodToJsonSchema(schema),
-          );
-          return ["cont", schema.parse(stepResult) + ctx.get("node1") * 2];
+          const schema = t.Number();
+          const stepResult = ctx.step({
+            key: "addition",
+            description: "Enter a number for addition",
+            schema: schema,
+          });
+          return ["cont", parse(t.Number(), stepResult) + ctx.get("node1") * 2];
         },
       )
       .build();
@@ -484,7 +540,7 @@ describe("saga function", () => {
       expect(result.node2?.value).toBe(20);
     }
     const result2 = await workflow.run([
-      { k: ["node2", "addition"], ts: +new Date(), v: 5 },
+      { k: ["node2", "addition"], ts: Date.now(), v: 5 },
     ]);
     expect(result2.node2?.status).toBe("intr");
     if (result2.node2?.status === "intr") {

@@ -36,6 +36,7 @@ export interface StepContext {
    * Additional metadata for the step as key-value pairs.
    */
   extra?: Record<string, unknown>;
+  schema: object;
 }
 
 /**
@@ -99,7 +100,7 @@ export interface WorkflowContext<
    * // This node's compute function uses step to request user input with additional context
    * ```
    */
-  step<T>(context: StepContext, schema: object): T;
+  step<T>(context: StepContext): T;
 
   /**
    * Returns the current timestamp in milliseconds.

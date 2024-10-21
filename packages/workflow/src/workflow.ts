@@ -6,6 +6,7 @@ import type {
   WorkflowContext,
 } from "./types";
 import { sleep } from "./utils";
+import { NowSchema, RandomSchema } from "./schemas";
 
 export interface RunOptions {
   timeout?: number;
@@ -85,8 +86,7 @@ export type Result<T, Node extends string = string> =
   | ({ status: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
-      | (InterruptedUntil &
-          InterruptedValue) // timeout
+      | (InterruptedUntil & InterruptedValue) // timeout
     ));
 
 /**
@@ -135,10 +135,10 @@ export class Workflow<
         ? result.value
         : undefined;
   };
-  step = <T>(context: StepContext, schema: object): T => {
+  step = <T>(context: StepContext): T => {
     throw new InputInterrupt(
       { ...context, key: [...this.currentKeys, context.key] },
-      schema,
+      context.schema,
     );
   };
 
@@ -155,7 +155,7 @@ export class Workflow<
   capture = <T>(context: StepContext, fn: () => T | Promise<T>): T => {
     const stepKey = `capture:${context.key}`;
     try {
-      return this.step<T>({ key: stepKey }, { schema: {} });
+      return this.step<T>({ ...context, key: stepKey });
     } catch (e) {
       if (e instanceof InputInterrupt) {
         const newEvent = fn();
@@ -170,8 +170,9 @@ export class Workflow<
   };
 
   getNow = (): number =>
-    this.tempRunOpts?.now ? this.tempRunOpts.now() : +new Date();
-  now = (): number => this.capture({ key: "now" }, this.getNow);
+    this.tempRunOpts?.now ? this.tempRunOpts.now() : Date.now();
+  now = (): number =>
+    this.capture({ key: "now", schema: NowSchema }, this.getNow);
 
   sleep = (ms: number, context?: Partial<StepContext>): void => {
     this.waitUntil(this.now() + ms, { key: "sleep", ...context });
@@ -187,7 +188,7 @@ export class Workflow<
   };
 
   random = (): number => {
-    return this.capture({ key: "random" }, Math.random);
+    return this.capture({ key: "random", schema: RandomSchema }, Math.random);
   };
 
   private async executeNode<K extends keyof T>(
@@ -218,7 +219,7 @@ export class Workflow<
         ...events,
         ...(this.tempNewEvents?.[key] ?? []),
       ];
-      this.step = <T>(context: StepContext, schema: object): T => {
+      this.step = <T>(context: StepContext): T => {
         if (idx < allEvents?.length) {
           const event = allEvents[idx++];
           if (isEqual(event.k, [...this.currentKeys, context.key])) {
@@ -228,6 +229,7 @@ export class Workflow<
             `Expected event ${this.currentKeys}:${context.key} but got ${event.k} instead`,
           );
         }
+        const schema = context.schema;
         throw new InputInterrupt(
           { ...context, key: [...this.currentKeys, context.key] },
           schema,

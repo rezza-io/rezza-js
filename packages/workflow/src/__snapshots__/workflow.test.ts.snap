@@ -68,11 +68,11 @@ exports[`Workflow basic step 3`] = `
   },
   "c": {
     "schema": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
+      [Symbol(TypeBox.Kind)]: "Object",
       "properties": {
         "x": {
-          "description": "sweet number",
+          [Symbol(TypeBox.Kind)]: "Number",
+          "title": "sweet number",
           "type": "number",
         },
       },
@@ -88,6 +88,20 @@ exports[`Workflow basic step 3`] = `
         "c",
         "need_number",
       ],
+      "schema": {
+        [Symbol(TypeBox.Kind)]: "Object",
+        "properties": {
+          "x": {
+            [Symbol(TypeBox.Kind)]: "Number",
+            "title": "sweet number",
+            "type": "number",
+          },
+        },
+        "required": [
+          "x",
+        ],
+        "type": "object",
+      },
     },
   },
   "d": {
@@ -134,17 +148,7 @@ exports[`Workflow basic step 5`] = `
     "value": "hello 1",
   },
   "c": {
-    "error": [ZodError: [
-  {
-    "code": "invalid_type",
-    "expected": "number",
-    "received": "undefined",
-    "path": [
-      "x"
-    ],
-    "message": "Required"
-  }
-]],
+    "error": [AssertError: Expected required property],
     "status": "err",
   },
   "d": {

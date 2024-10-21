@@ -56,6 +56,7 @@ export class WorkflowBuilder<
       group?: G;
       /** Array of dependency keys (optional) */
       deps?: D[];
+      schema: { static: V };
     },
     compute: (context: WorkflowContext<T>) => V,
     saga?: (context: WorkflowContext<T>, value: V) => ["cont" | "halt", V],
