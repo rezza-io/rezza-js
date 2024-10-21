@@ -90,8 +90,7 @@ export type Result<T, Node extends string = string> =
   | ({ status: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
-      | (InterruptedUntil &
-          InterruptedValue) // timeout
+      | (InterruptedUntil & InterruptedValue) // timeout
     ));
 
 /**
@@ -313,7 +312,7 @@ export class Workflow<
     return this.nodes[key].dependencies;
   }
 
-  topology() {
+  topology(): { node: keyof T; schema: object; dependecies: string[] }[] {
     const visited = new Set<keyof T>();
     const result: { node: keyof T; schema: object; dependecies: string[] }[] =
       [];
