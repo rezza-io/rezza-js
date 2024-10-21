@@ -61,7 +61,7 @@ export class WorkflowBuilder<
     compute: (context: WorkflowContext<T>) => V,
     saga?: (context: WorkflowContext<T>, value: V) => ["cont" | "halt", V],
   ): WorkflowBuilder<T & Record<K, DAGNode<V, D>>, G> {
-    const { key: nodeKey, group } = config;
+    const { key: nodeKey, group, schema } = config;
     if (nodeKey in this.nodes) {
       throw new Error(`Node ${String(nodeKey)} already exists`);
     }
@@ -79,6 +79,7 @@ export class WorkflowBuilder<
         dependencies: config.deps ?? [],
         group,
         saga,
+        schema,
       },
     };
 

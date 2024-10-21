@@ -16,7 +16,6 @@ export interface RunOptions {
 class InputInterrupt extends Error {
   constructor(
     public step: FullStepContext,
-    public schema?: object,
     public waitUntil?: number,
   ) {
     super(`Interrupt at ${step}`); // (1)
@@ -86,8 +85,7 @@ export type Result<T, Node extends string = string> =
   | ({ status: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
-      | (InterruptedUntil &
-          InterruptedValue) // timeout
+      | (InterruptedUntil & InterruptedValue) // timeout
     ));
 
 /**
@@ -137,10 +135,10 @@ export class Workflow<
         : undefined;
   };
   step = <T>(context: StepContext): T => {
-    throw new InputInterrupt(
-      { ...context, key: [...this.currentKeys, context.key] },
-      context.schema,
-    );
+    throw new InputInterrupt({
+      ...context,
+      key: [...this.currentKeys, context.key],
+    });
   };
 
   addTempEvent = (key: string, newEvent: unknown): void => {
@@ -183,7 +181,6 @@ export class Workflow<
     if (this.getNow() < datetime)
       throw new InputInterrupt(
         { ...context, key: [...this.currentKeys, "waitUntil"] },
-        undefined,
         datetime,
       );
   };
@@ -230,11 +227,10 @@ export class Workflow<
             `Expected event ${this.currentKeys}:${context.key} but got ${event.k} instead`,
           );
         }
-        const schema = context.schema;
-        throw new InputInterrupt(
-          { ...context, key: [...this.currentKeys, context.key] },
-          schema,
-        );
+        throw new InputInterrupt({
+          ...context,
+          key: [...this.currentKeys, context.key],
+        });
       };
       let value: T[K]["value"] | undefined = undefined;
       let eventIdx = 0;
@@ -277,7 +273,6 @@ export class Workflow<
           return {
             status: "intr",
             step: error.step,
-            schema: error.schema,
             ...(error.waitUntil ? { waitUntil: error.waitUntil } : {}),
             ...(value ? { value } : {}),
             ...(eventIdx ? { eventIdx } : {}),
@@ -300,6 +295,31 @@ export class Workflow<
 
   getDependencies<K extends keyof T>(key: K): T[K]["dependencies"] {
     return this.nodes[key].dependencies;
+  }
+
+  topology() {
+    const visited = new Set<keyof T>();
+    const result: { node: keyof T; schema: object; dependecies: string[] }[] =
+      [];
+
+    const visit = (node: keyof T) => {
+      if (visited.has(node)) return;
+      visited.add(node);
+      for (const dep of this.nodes[node].dependencies) {
+        visit(dep);
+      }
+      result.push({
+        node,
+        dependecies: this.getDependencies<keyof T>(node),
+        schema: this.nodes[node].schema,
+      });
+    };
+
+    for (const node of Object.keys(this.nodes) as (keyof T)[]) {
+      visit(node);
+    }
+
+    return result;
   }
 
   topologicalSort(): (keyof T)[] {

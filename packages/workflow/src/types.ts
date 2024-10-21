@@ -16,6 +16,8 @@ export interface FullStepContext {
    * Additional metadata for the step as key-value pairs.
    */
   extra?: Record<string, unknown>;
+
+  schema: object;
 }
 
 /**
@@ -36,6 +38,7 @@ export interface StepContext {
    * Additional metadata for the step as key-value pairs.
    */
   extra?: Record<string, unknown>;
+
   schema: object;
 }
 
@@ -209,7 +212,12 @@ export interface WorkflowContext<
 /**
  * Represents a node in a Directed Acyclic Graph (DAG) within the workflow.
  */
-export type DAGNode<V, D extends string, G extends string = string> = {
+export type DAGNode<
+  V,
+  D extends string,
+  G extends string = string,
+  S extends object = object,
+> = {
   /* The computed value of the node */
   value: V;
   /* Function to compute the node's value */
@@ -220,4 +228,5 @@ export type DAGNode<V, D extends string, G extends string = string> = {
   group?: G;
   /* Optional saga function for advanced flow control */
   saga?: (context: WorkflowContext, value: V) => ["cont" | "halt", V];
+  schema: S;
 };
