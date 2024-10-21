@@ -90,7 +90,8 @@ export type Result<T, Node extends string = string> =
   | ({ status: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
-      | (InterruptedUntil & InterruptedValue) // timeout
+      | (InterruptedUntil &
+          InterruptedValue) // timeout
     ));
 
 /**
