@@ -2,6 +2,8 @@ import { Type } from "@sinclair/typebox";
 
 export const DoneSchema = Type.Object({});
 
+export const WaitSchema = Type.Object({});
+
 export const NowSchema = Type.Number({
   description: "Number of milliseconds elapsed since the epoch",
 });
