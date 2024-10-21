@@ -23,6 +23,10 @@ jobs:
 
       - name: Run linter
         working-directory: packages/workflow
+        run: bun run build
+
+      - name: Run linter
+        working-directory: packages/workflow
         run: bun run lint
 
       - name: Run tests
