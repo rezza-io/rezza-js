@@ -2,10 +2,10 @@ import { describe, expect, test } from "bun:test";
 import dedent from "dedent";
 import { Heap } from "heap-js";
 import _ from "lodash";
+import { WorkflowBuilder, parse, t } from ".";
 import sleepWorkflow from "../examples/sleep";
 import { RandomSchema } from "./schemas";
 import { sleep } from "./utils";
-import { parse, t, WorkflowBuilder } from ".";
 
 describe("Workflow", () => {
   test("basic usage", async () => {

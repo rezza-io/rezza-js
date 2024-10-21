@@ -1,4 +1,5 @@
 import isEqual from "lodash-es/isEqual";
+import { NowSchema, RandomSchema } from "./schemas";
 import type {
   DAGNode,
   FullStepContext,
@@ -6,7 +7,6 @@ import type {
   WorkflowContext,
 } from "./types";
 import { sleep } from "./utils";
-import { NowSchema, RandomSchema } from "./schemas";
 
 export interface RunOptions {
   timeout?: number;
@@ -86,7 +86,8 @@ export type Result<T, Node extends string = string> =
   | ({ status: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
-      | (InterruptedUntil & InterruptedValue) // timeout
+      | (InterruptedUntil &
+          InterruptedValue) // timeout
     ));
 
 /**

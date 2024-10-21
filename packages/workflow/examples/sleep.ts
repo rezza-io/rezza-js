@@ -1,4 +1,4 @@
-import { WorkflowBuilder, schemas, t, parse } from "@rezza.io/workflow";
+import { WorkflowBuilder, parse, schemas, t } from "@rezza.io/workflow";
 
 const DurationSchema = t.Object(
   {
