@@ -67,20 +67,6 @@ exports[`Workflow basic step 3`] = `
     "value": "hello 1",
   },
   "c": {
-    "schema": {
-      [Symbol(TypeBox.Kind)]: "Object",
-      "properties": {
-        "x": {
-          [Symbol(TypeBox.Kind)]: "Number",
-          "title": "sweet number",
-          "type": "number",
-        },
-      },
-      "required": [
-        "x",
-      ],
-      "type": "object",
-    },
     "status": "intr",
     "step": {
       "description": "Enter a number",
