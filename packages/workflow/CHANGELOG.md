@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.2] - 2024-10-23
+
+### Added
+- Exported `FormatRegistry` from TypeBox for advanced type customization
+
+### Changed
+- Updated peer dependencies to include TypeBox with version >=0.33.0
+
+### Fixed
+- Corrected TypeBox import path in the main index file
+
+
 ## [0.3.1] - 2024-10-22
 
 ### Changed
