@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.2] - 2024-10-22
+
+### Added
+- Exported `DoneSchema` and `DONE` constant from `schemas.ts`
+- Introduced `DONE` constant as a typed alternative to the string literal "done"
+
+### Changed
+- Updated `sleep.ts` example to use `DoneSchema` and `DONE` constant
+- Refactored `sum.ts` example for better readability and type safety
+- Modified schema exports in `index.ts` to use `export *` instead of `export * as schemas`
+- Updated `DoneSchema` definition to use `as const` for improved type inference
+
+### Fixed
+- Improved type safety in `sleep.ts` and `sum.ts` examples
+
+### Developer Experience
+- Bumped version to 0.4.2 in both `jsr.json` and `package.json`
+
+
 ## [0.4.1] - 2024-10-21
 
 ### Added
