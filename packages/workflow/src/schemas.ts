@@ -1,9 +1,10 @@
 import type { TLiteral, TNull, TNumber } from "@sinclair/typebox";
 import { Type } from "@sinclair/typebox";
 
-export const DoneSchema: TLiteral<string> = Type.Const("done", {
+export const DoneSchema: TLiteral<"done"> = Type.Const("done" as const, {
   title: "Mark the task as done",
 });
+export const DONE: typeof DoneSchema.static = "done";
 
 export const WaitSchema: TNull = Type.Null({ title: "zZz" });
 

@@ -1,4 +1,10 @@
-import { WorkflowBuilder, parse, schemas, t } from "@rezza.io/workflow";
+import {
+  DONE,
+  DoneSchema,
+  WorkflowBuilder,
+  parse,
+  t,
+} from "@rezza.io/workflow";
 
 const DurationSchema = t.Object(
   {
@@ -20,10 +26,10 @@ export default WorkflowBuilder.create()
     return parse(DurationSchema, enter_step);
   })
   .addNode(
-    { key: "wake_up", deps: ["decide"], schema: schemas.DoneSchema },
+    { key: "wake_up", deps: ["decide"], schema: DoneSchema },
     ({ get, sleep }) => {
       sleep(get("decide").duration);
-      return {};
+      return DONE;
     },
   )
   .build();

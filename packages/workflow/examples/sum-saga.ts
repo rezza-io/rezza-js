@@ -6,14 +6,17 @@ const schema = t.Object({
 });
 
 export default WorkflowBuilder.create()
-  .addNode({ key: "input", schema }, (ctx) => {
-    const res = ctx.step({
-      key: "numbers",
-      description: "Enter new pair",
-      schema,
-    });
-    return parse(schema, res);
-  })
+  .addNode(
+    { key: "input", schema },
+    () => ({ firstNumber: 0, secondNumber: 0 }),
+    (ctx) => {
+      const res = parse(
+        schema,
+        ctx.step({ key: "numbers", description: "Enter new pair", schema }),
+      );
+      return ["cont", res] as const;
+    },
+  )
   .addNode(
     { key: "sum", deps: ["input"], schema: t.Number() },
     ({ get }) => get("input").firstNumber + get("input").secondNumber,
