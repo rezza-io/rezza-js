@@ -149,6 +149,7 @@ exports[`Workflow basic step 3`] = `
         ],
         "type": "object",
       },
+      "title": "Enter a number",
     },
   },
   "d": {

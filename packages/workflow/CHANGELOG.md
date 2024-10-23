@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.4] - 2024-10-23
+
+### Added
+- Introduced `title` field to `FullStepContext` and `StepContext` interfaces for better step documentation
+- Added `title` field to the `need_number` step in the workflow test
+
+### Changed
+- Updated comments in `types.ts` to use single-line comment style for consistency
+- Clarified the purpose of the `schema` field in `FullStepContext` and `StepContext`
+
+### Developer Experience
+- Bumped version to 0.4.4 in both `jsr.json` and `package.json`
+
+
+# Changelog
+
 ## [0.4.3] - 2024-10-23
 
 ### Added

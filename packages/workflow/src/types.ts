@@ -2,21 +2,19 @@
  * Represents the context for a step in the workflow.
  */
 export interface FullStepContext {
-  /**
-   * The unique identifier for the step.
-   */
+  /* Unique identifier for the step */
   key: string[];
 
-  /**
-   * Optional description of the step.
-   */
+  /* Optional title of the step */
+  title?: string;
+
+  /* Optional description of the step */
   description?: string;
 
-  /**
-   * Additional metadata for the step as key-value pairs.
-   */
+  /* Additional metadata for the step as key-value pairs */
   extra?: Record<string, unknown>;
 
+  /* Schema definition for the step */
   schema: object;
 }
 
@@ -24,21 +22,19 @@ export interface FullStepContext {
  * Represents the context for a step in the workflow.
  */
 export interface StepContext<T = unknown> {
-  /**
-   * The unique identifier for the step.
-   */
+  /* Unique identifier for the step */
   key: string;
 
-  /**
-   * Optional description of the step.
-   */
+  /* Optional title of the step */
+  title?: string;
+
+  /* Optional description of the step */
   description?: string;
 
-  /**
-   * Additional metadata for the step as key-value pairs.
-   */
+  /* Additional metadata for the step as key-value pairs */
   extra?: Record<string, unknown>;
 
+  /* Schema definition for the step with static typing */
   schema: { static: T };
 }
 

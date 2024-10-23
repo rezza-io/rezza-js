@@ -65,6 +65,7 @@ describe("Workflow", () => {
             schema,
             step({
               key: "need_number",
+              title: "Enter a number",
               description: dedent`
               Enter a number
               `,
