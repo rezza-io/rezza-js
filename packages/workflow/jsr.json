@@ -1,6 +1,6 @@
 {
   "name": "@rezza/workflow",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "exports": "./src/index.ts",
   "imports": { "lodash-es": "npm:lodash-es@^4.17.21" }
 }
