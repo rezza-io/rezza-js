@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.3] - 2024-10-23
+
+### Added
+- Introduced `title` and `description` fields to `DAGNode` type for better node documentation
+- Added `isSaga` flag to the topology output for identifying saga nodes
+
+### Changed
+- Updated `WorkflowBuilder.addNode` to accept `title` and `description` in node configuration
+- Modified `Workflow.topology()` to include `title`, `description`, and `isSaga` in the output
+
+### Developer Experience
+- Added `test:dev` script in `package.json` for running tests in watch mode
+- Updated test snapshots to reflect new topology output format
+
+
+# Changelog
+
 ## [0.4.2] - 2024-10-22
 
 ### Added
