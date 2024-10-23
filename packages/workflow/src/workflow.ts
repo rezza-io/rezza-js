@@ -90,8 +90,7 @@ export type Result<T, Node extends string = string> =
   | ({ status: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
-      | (InterruptedUntil &
-          InterruptedValue) // timeout
+      | (InterruptedUntil & InterruptedValue) // timeout
     ));
 
 /**
@@ -313,10 +312,23 @@ export class Workflow<
     return this.nodes[key].dependencies;
   }
 
-  topology(): { node: keyof T; schema: object; dependecies: string[] }[] {
+  topology(): {
+    node: keyof T;
+    schema: object;
+    dependecies: string[];
+    title?: string;
+    description?: string;
+    isSaga?: boolean;
+  }[] {
     const visited = new Set<keyof T>();
-    const result: { node: keyof T; schema: object; dependecies: string[] }[] =
-      [];
+    const result: {
+      node: keyof T;
+      schema: object;
+      dependecies: string[];
+      title?: string;
+      description?: string;
+      isSaga?: boolean;
+    }[] = [];
 
     const visit = (node: keyof T) => {
       if (visited.has(node)) return;
@@ -326,8 +338,11 @@ export class Workflow<
       }
       result.push({
         node,
-        dependecies: this.getDependencies<keyof T>(node),
+        dependecies: this.nodes[node].dependencies,
         schema: this.nodes[node].schema,
+        title: this.nodes[node].title,
+        isSaga: !!this.nodes[node].saga,
+        description: this.nodes[node].description,
       });
     };
 

@@ -10,7 +10,16 @@ import { sleep } from "./utils";
 describe("Workflow", () => {
   test("basic usage", async () => {
     const workflow = WorkflowBuilder.create()
-      .addNode({ key: "a", deps: [], schema: t.Number() }, () => 1)
+      .addNode(
+        {
+          key: "a",
+          title: "a",
+          description: "aaaa",
+          deps: [],
+          schema: t.Number(),
+        },
+        () => 1,
+      )
       .addNode(
         { key: "b", deps: ["a"], schema: t.String() },
         ({ get }) => `hello ${get("a")}`,
@@ -35,7 +44,7 @@ describe("Workflow", () => {
     // TypeScript infers the correct types
     // console.log(workflow.execute({}));
 
-    expect(workflow.topologicalSort()).toMatchSnapshot();
+    expect(workflow.topology()).toMatchSnapshot();
     expect(workflow.getDependencies("d")).toMatchSnapshot();
     expect(await workflow.run([])).toMatchSnapshot();
   });

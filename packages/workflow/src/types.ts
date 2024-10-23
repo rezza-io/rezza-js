@@ -224,6 +224,10 @@ export type DAGNode<
   compute: (context: WorkflowContext) => V;
   /* Array of keys representing the node's dependencies */
   dependencies: D[];
+  /* Optional title for the node */
+  title?: string;
+  /* Optional description of the node's purpose or functionality */
+  description?: string;
   /* Optional group to which the node belongs */
   group?: G;
   /* Optional saga function for advanced flow control */

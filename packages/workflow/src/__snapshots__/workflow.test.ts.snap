@@ -2,10 +2,71 @@
 
 exports[`Workflow basic usage 1`] = `
 [
-  "a",
-  "b",
-  "c",
-  "d",
+  {
+    "dependecies": [],
+    "description": "aaaa",
+    "isSaga": false,
+    "node": "a",
+    "schema": {
+      [Symbol(TypeBox.Kind)]: "Number",
+      "type": "number",
+    },
+    "title": "a",
+  },
+  {
+    "dependecies": [
+      "a",
+    ],
+    "description": undefined,
+    "isSaga": false,
+    "node": "b",
+    "schema": {
+      [Symbol(TypeBox.Kind)]: "String",
+      "type": "string",
+    },
+    "title": undefined,
+  },
+  {
+    "dependecies": [
+      "a",
+    ],
+    "description": undefined,
+    "isSaga": false,
+    "node": "c",
+    "schema": {
+      [Symbol(TypeBox.Kind)]: "Boolean",
+      "type": "boolean",
+    },
+    "title": undefined,
+  },
+  {
+    "dependecies": [
+      "b",
+      "c",
+    ],
+    "description": undefined,
+    "isSaga": false,
+    "node": "d",
+    "schema": {
+      [Symbol(TypeBox.Kind)]: "Object",
+      "properties": {
+        "flag": {
+          [Symbol(TypeBox.Kind)]: "Boolean",
+          "type": "boolean",
+        },
+        "value": {
+          [Symbol(TypeBox.Kind)]: "Number",
+          "type": "number",
+        },
+      },
+      "required": [
+        "value",
+        "flag",
+      ],
+      "type": "object",
+    },
+    "title": undefined,
+  },
 ]
 `;
 

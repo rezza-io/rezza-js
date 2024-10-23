@@ -54,6 +54,10 @@ export class WorkflowBuilder<
       key: K extends keyof T ? never : K;
       /** The group to which the node belongs (optional) */
       group?: G;
+      /* Optional title for the node */
+      title?: string;
+      /* Optional description of the node's purpose or functionality */
+      description?: string;
       /** Array of dependency keys (optional) */
       deps?: D[];
       schema: { static: V };
@@ -77,6 +81,8 @@ export class WorkflowBuilder<
       [nodeKey]: {
         compute: compute,
         dependencies: config.deps ?? [],
+        title: config.title,
+        description: config.description,
         group,
         saga,
         schema,

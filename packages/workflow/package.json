@@ -1,7 +1,7 @@
 {
   "name": "@rezza.io/workflow",
   "description": "Durable Workflow Engine from rezza.io",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rezza-io/rezza-js.git",
@@ -19,6 +19,7 @@
     "lint:es": "eslint .",
     "lint:biome": "biome check .",
     "test": "bun test",
+    "test:dev": "bun test --watch",
     "publish:npm": "npm run lint && npm test && npm run build && npm publish --access public"
   },
   "devDependencies": {
