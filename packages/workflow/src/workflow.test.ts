@@ -111,6 +111,8 @@ describe("Workflow", () => {
       { k: ["c", "need_number"], ts: Date.now(), v: { y: 2 } },
     ]);
     expect(exec3.values).toMatchSnapshot();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    expect(exec3.newEvents.map(({ ts: _ts, ...e }) => e)).toMatchSnapshot();
     expect(exec3.values.c?.status).toBe("err");
   });
   test("simple group", async () => {

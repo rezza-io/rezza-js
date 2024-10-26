@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.7] - 2024-10-26
+
+### Added
+- Enhanced event context by adding `title` and `description` fields to `StepEventWithContext` type
+- Improved event tracking with more detailed context information passing
+
+### Changed
+- Renamed `StepEventWithSchema` to `StepEventWithContext` for better clarity
+- Updated `PromiseInterrupt` to store full step context instead of just schema
+- Modified `addTempEvent` to use complete step context when creating events
+- Enhanced workflow test snapshots to include title and description fields
+
+### Developer Experience
+- Improved type documentation for event-related interfaces
+- Updated version to 0.4.7 in both `jsr.json` and `package.json`
+
+
 ## [0.4.4] - 2024-10-23
 
 ### Added

@@ -26,7 +26,7 @@ class PromiseInterrupt extends Error {
   constructor(
     public step: string,
     public promise: Promise<unknown>,
-    public schema: object,
+    public context: StepContext,
   ) {
     super(`Interrupt at ${step}`); // (1)
   }
@@ -55,18 +55,22 @@ export type InterruptedValue = {
   * This type is used to capture and store information about specific actions or data
   * produced during the execution of a workflow node.
   */
-export type StepEventWithSchema = {
-  /* The key or name of the event, represented as an array of strings. */
+export type StepEventWithContext = {
+  /** The key or name of the event, represented as an array of strings. */
   k: string[];
-  /* The value associated with the event, which can be of any type. */
+  /** The value associated with the event, which can be of any type. */
   v: unknown;
-  /* The timestamp of when the event occurred, represented as a number (milliseconds since epoch). */
+  /** The timestamp of when the event occurred, represented as a number (milliseconds since epoch). */
   ts: number;
-  /* The schema of the value associated with the event */
-  s: object;
+  /** The schema of the value associated with the event */
+  s?: object;
+  /** The title of the event */
+  t?: string;
+  /** The description of the event */
+  d?: string;
 };
 
-export type StepEvent = Omit<StepEventWithSchema, "s">;
+export type StepEvent = Omit<StepEventWithContext, "s" | "t" | "d">;
 
 /**
  * Represents the result of a workflow node execution.
@@ -121,9 +125,9 @@ export class Workflow<
   private snapshots: { [K in keyof T]?: [number, T[K]["value"]] } = {};
 
   private tempResults: { [K in keyof T]?: Result<T[K]["value"]> } | null = null;
-  private tempNewEvents: { [K in keyof T]?: StepEventWithSchema[] } | null =
+  private tempNewEvents: { [K in keyof T]?: StepEventWithContext[] } | null =
     null;
-  private newConsumedEvents: StepEventWithSchema[] | null = null;
+  private newConsumedEvents: StepEventWithContext[] | null = null;
   private tempRunOpts: RunOptions | null = null;
 
   private currentNode: keyof T | null = null;
@@ -150,11 +154,17 @@ export class Workflow<
     });
   };
 
-  addTempEvent = (key: string, newEvent: unknown, schema: object): void => {
-    const event: StepEventWithSchema = {
+  addTempEvent = (
+    key: string,
+    newEvent: unknown,
+    context: StepContext<unknown>,
+  ): void => {
+    const event: StepEventWithContext = {
       k: [...this.currentKeys, key],
       v: newEvent,
-      s: schema,
+      s: context.schema,
+      t: context.title,
+      d: context.description,
       ts: this.getNow(),
     };
     this.tempNewEvents![this.currentNode!] ||= [];
@@ -170,9 +180,9 @@ export class Workflow<
       if (e instanceof InputInterrupt) {
         const newEvent = fn();
         if (newEvent instanceof Promise) {
-          throw new PromiseInterrupt(stepKey, newEvent, context.schema);
+          throw new PromiseInterrupt(stepKey, newEvent, context);
         }
-        this.addTempEvent(stepKey, newEvent, context.schema);
+        this.addTempEvent(stepKey, newEvent, context);
         return newEvent;
       }
       throw e;
@@ -235,7 +245,12 @@ export class Workflow<
       this.step = <T>(context: StepContext): T => {
         if (idx < allEvents?.length) {
           const event = allEvents[idx++];
-          this.newConsumedEvents?.push({ ...event, s: context.schema });
+          this.newConsumedEvents?.push({
+            ...event,
+            s: context.schema,
+            t: context.title,
+            d: context.description,
+          });
           if (isEqual(event.k, [...this.currentKeys, context.key])) {
             return event.v as T;
           }
@@ -277,7 +292,7 @@ export class Workflow<
           try {
             const newEvent = await error.promise;
             promiseCount += 1;
-            this.addTempEvent(error.step, newEvent, error.schema);
+            this.addTempEvent(error.step, newEvent, error.context);
           } catch (error) {
             if (error instanceof Error) {
               // console.log(error);
@@ -392,7 +407,7 @@ export class Workflow<
     opts?: RunOptions,
   ): Promise<{
     values: { [K in keyof T]?: Result<T[K]["value"]> };
-    newEvents: StepEventWithSchema[];
+    newEvents: StepEventWithContext[];
     timeout: boolean;
   }> {
     if (this.isRunning) {
