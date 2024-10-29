@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.2] - 2024-10-29
+
+### Changed
+- Added support for null type in `StepInput` for better type flexibility
+- Made schema field optional for JSON type inputs
+- Refactored `FullStepContext` to inherit from `StepContext` for better type composition
+- Reordered type definitions to improve code readability
+
+### Developer Experience
+- Improved type definitions with better inheritance patterns
+
+
 ## [0.5.1] - 2024-10-29
 
 ### Changed

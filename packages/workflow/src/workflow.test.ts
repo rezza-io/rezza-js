@@ -637,7 +637,13 @@ describe("saga function", () => {
             key: "say",
             schema: DoneSchema,
             inputs: [
-              { key: [input], title: "Say", content: input, type: "md" },
+              {
+                key: [input],
+                title: "Say",
+                content: input,
+                type: "md",
+                action: "display",
+              },
             ],
           });
           return true;

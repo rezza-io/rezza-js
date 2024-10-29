@@ -1,22 +1,3 @@
-/**
- * Represents the context for a step in the workflow.
- */
-export interface FullStepContext {
-  /** Unique identifier for the step */
-  key: string[];
-
-  /** Optional title of the step */
-  title?: string;
-
-  /** Optional description of the step */
-  description?: string;
-
-  /** Additional metadata for the step as key-value pairs */
-  extra?: Record<string, unknown>;
-
-  /** Schema definition for the step */
-  schema: object;
-}
 export type Warning = {
   type: "context_updated";
   step: string[];
@@ -53,6 +34,7 @@ export type StepInput = {
     | "request"
     | "prompt";
 } & (
+  | { type: null }
   | {
       /** The content value for string-based formats like HTML, Markdown or URI */
       content: string;
@@ -68,9 +50,20 @@ export type StepInput = {
       type: "json";
 
       /** Optional JSON schema to validate the input content */
-      schema: object;
+      schema?: object;
     }
 );
+
+/**
+ * Represents the context for a step in the workflow.
+ */
+export type FullStepContext = Omit<StepContext, "key" | "schema"> & {
+  /** Unique identifier for the step */
+  key: string[];
+
+  /** Schema definition for the step */
+  schema: object;
+};
 
 /**
  * Represents the context for a step in the workflow.
