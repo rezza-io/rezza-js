@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import dedent from "dedent";
 import { Heap } from "heap-js";
 import _ from "lodash";
-import { StepEvent, WorkflowBuilder, parse, t } from ".";
+import { type StepEvent, WorkflowBuilder, parse, t } from ".";
 import sleepWorkflow from "../examples/sleep";
 import { DoneSchema, RandomSchema } from "./schemas";
 import { sleep } from "./utils";
