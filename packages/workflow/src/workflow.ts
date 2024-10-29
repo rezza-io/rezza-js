@@ -4,9 +4,11 @@ import type {
   DAGNode,
   FullStepContext,
   StepContext,
+  Warning,
   WorkflowContext,
 } from "./types";
 import { sleep } from "./utils";
+import _ from "lodash";
 
 export interface RunOptions {
   timeout?: number;
@@ -62,15 +64,13 @@ export type StepEventWithContext = {
   v: unknown;
   /** The timestamp of when the event occurred, represented as a number (milliseconds since epoch). */
   ts: number;
-  /** The schema of the value associated with the event */
-  s?: object;
-  /** The title of the event */
-  t?: string;
-  /** The description of the event */
-  d?: string;
+  /** Optional context object containing metadata about the step being executed */
+  c: StepContext;
+  /** The input keys associated with the step, represented as an array of arrays of strings. */
+  i?: string[][];
 };
 
-export type StepEvent = Omit<StepEventWithContext, "s" | "t" | "d">;
+export type StepEvent = Omit<StepEventWithContext, "c">;
 
 /**
  * Represents the result of a workflow node execution.
@@ -94,8 +94,7 @@ export type Result<T, Node extends string = string> =
   | ({ status: "intr"; step: FullStepContext; value?: T; eventIdx?: number } & (
       | InterruptedUntil
       | InterruptedValue
-      | (InterruptedUntil &
-          InterruptedValue) // timeout
+      | (InterruptedUntil & InterruptedValue) // timeout
     ));
 
 /**
@@ -129,6 +128,7 @@ export class Workflow<
     null;
   private newConsumedEvents: StepEventWithContext[] | null = null;
   private tempRunOpts: RunOptions | null = null;
+  private tempWarnings: Warning[] | null = null;
 
   private currentNode: keyof T | null = null;
   private currentKeys: string[] = [];
@@ -162,9 +162,7 @@ export class Workflow<
     const event: StepEventWithContext = {
       k: [...this.currentKeys, key],
       v: newEvent,
-      s: context.schema,
-      t: context.title,
-      d: context.description,
+      c: context,
       ts: this.getNow(),
     };
     this.tempNewEvents![this.currentNode!] ||= [];
@@ -245,17 +243,28 @@ export class Workflow<
       this.step = <T>(context: StepContext): T => {
         if (idx < allEvents?.length) {
           const event = allEvents[idx++];
+          const fullKey = [...this.currentKeys, context.key];
           this.newConsumedEvents?.push({
             ...event,
-            s: context.schema,
-            t: context.title,
-            d: context.description,
+            c: context,
           });
-          if (isEqual(event.k, [...this.currentKeys, context.key])) {
+          if (isEqual(event.k, fullKey)) {
+            const eventInputKeys = event.i;
+            const currentInputKeys = context.inputs?.map((i) => i.key);
+
+            if (!_.isEqual(eventInputKeys, currentInputKeys)) {
+              this.tempWarnings?.push({
+                type: "context_updated",
+                step: fullKey,
+                old: event.i,
+                new: currentInputKeys,
+              });
+            }
+
             return event.v as T;
           }
           throw new Error(
-            `Expected event ${this.currentKeys}:${context.key} but got ${event.k} instead`,
+            `Expected event ${fullKey} but got ${event.k} instead`,
           );
         }
         throw new InputInterrupt({
@@ -407,6 +416,7 @@ export class Workflow<
     opts?: RunOptions,
   ): Promise<{
     values: { [K in keyof T]?: Result<T[K]["value"]> };
+    warnings?: Warning[];
     newEvents: StepEventWithContext[];
     timeout: boolean;
   }> {
@@ -418,6 +428,7 @@ export class Workflow<
     this.tempNewEvents = {};
     this.newConsumedEvents = [];
     this.tempRunOpts = opts ?? null;
+    this.tempWarnings = [];
 
     let timeout = false;
 
@@ -435,13 +446,15 @@ export class Workflow<
     }
 
     const results = this.tempResults;
+    const warnings = this.tempWarnings;
     const newEvents = this.newConsumedEvents;
+    this.tempWarnings = null;
     this.newConsumedEvents = null;
     this.tempRunOpts = null;
     this.tempResults = null;
     this.tempNewEvents = null;
     this.isRunning = false;
-    return { values: results, newEvents, timeout };
+    return { values: results, newEvents, timeout, warnings };
   }
 
   async run(

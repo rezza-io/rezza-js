@@ -17,6 +17,49 @@ export interface FullStepContext {
   /** Schema definition for the step */
   schema: object;
 }
+export type Warning = {
+  type: "context_updated";
+  step: string[];
+  old?: string[][];
+  new?: string[][];
+};
+
+export type StepInput = {
+  /** Optional title for the step input */
+  title?: string;
+
+  /** Optional instruction text to guide user input */
+  instruction?: string;
+
+  /** Array of strings identifying this step input. Warns if key and provided event do not match */
+  key: string[];
+
+  /** The content/value of the step input */
+  content: string;
+
+  /** The format/type of the content - can be JSON, HTML, Markdown or URI */
+  type: "json" | "html" | "md" | "uri";
+
+  /** Optional JSON schema to validate the input content */
+  schema?: object;
+
+  action?: (
+    | "print"
+    | "display"
+    | "say"
+    | "ask"
+    | "write"
+    | "show"
+    | "read"
+    | "speak"
+    | "query"
+    | "announce"
+    | "present"
+    | "narrate"
+    | "request"
+    | "prompt"
+  )[];
+};
 
 /**
  * Represents the context for a step in the workflow.
@@ -36,6 +79,9 @@ export interface StepContext<T = unknown> {
 
   /** Schema definition for the step with static typing */
   schema: { static: T };
+
+  /** Array of inputs required for this step */
+  inputs?: StepInput[];
 }
 
 /**

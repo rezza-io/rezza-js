@@ -1,7 +1,7 @@
 {
   "name": "@rezza.io/workflow",
   "description": "Durable Workflow Engine from rezza.io",
-  "version": "0.4.7",
+  "version": "0.5.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rezza-io/rezza-js.git",

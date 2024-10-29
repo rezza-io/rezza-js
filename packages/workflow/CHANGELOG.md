@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.0] - 2024-10-29
+
+### Added
+- Introduced `StepInput` type for structured input handling
+- Added `inputs` field to `StepContext` for defining multiple inputs per step
+- Introduced `Warning` type for handling workflow execution warnings
+- Added input key validation with warning generation when keys mismatch
+- Added new conditional workflow example demonstrating input handling
+
+### Changed
+- Refactored `StepEventWithContext` to use a single `c` field containing full context
+- Updated event context to include input keys via `i` field
+- Modified `dryRun` to return warnings array in result
+- Removed separate `s`, `t`, and `d` fields from events in favor of unified context
+
+### Developer Experience
+- Added test case for input key validation
+- Updated test snapshots to reflect new event structure
+- Added detailed examples showing conditional workflow patterns
+
 ## [0.4.7] - 2024-10-26
 
 ### Added

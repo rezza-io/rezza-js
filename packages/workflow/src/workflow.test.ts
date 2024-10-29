@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import dedent from "dedent";
 import { Heap } from "heap-js";
 import _ from "lodash";
-import { WorkflowBuilder, parse, t } from ".";
+import { StepEvent, WorkflowBuilder, parse, t } from ".";
 import sleepWorkflow from "../examples/sleep";
-import { RandomSchema } from "./schemas";
+import { DoneSchema, RandomSchema } from "./schemas";
 import { sleep } from "./utils";
 
 describe("Workflow", () => {
@@ -614,6 +614,55 @@ describe("saga function", () => {
     // console.log(res);
     expect(res.newEvents).toHaveLength(2);
     expect(res.values.sum?.status === "done" && res.values.sum.value).toBe(5);
-    expect(res.newEvents.map((e) => [e.v, e.s])).toMatchSnapshot();
+    expect(res.newEvents.map((e) => [e.v, e.c])).toMatchSnapshot();
+  });
+  test("should produce warning if input key change", async () => {
+    const schema = t.Union([t.Literal("dog"), t.Literal("cat")], {
+      title: "dog or cat?",
+    });
+
+    const conditionalWorkflow = WorkflowBuilder.create()
+      .addNode({ key: "input", schema }, (ctx) => {
+        const res = ctx.step({
+          key: "ask",
+          schema,
+        });
+        return parse(schema, res);
+      })
+      .addNode(
+        { key: "say", deps: ["input"], schema: t.Boolean() },
+        ({ get, step }) => {
+          const input = get("input");
+          step({
+            key: "say",
+            schema: DoneSchema,
+            inputs: [
+              { key: [input], title: "Say", content: input, type: "md" },
+            ],
+          });
+          return true;
+        },
+      )
+      .build();
+
+    const now = Date.now();
+    const ask_cat: StepEvent = { k: ["input", "ask"], v: "cat", ts: now };
+    // const ask_dog: StepEvent = { k: ["input", "ask"], v: "dog", ts: now };
+    // const say_cat: StepEvent = {
+    //   k: ["say", "say"],
+    //   v: "done",
+    //   i: [["cat"]],
+    //   ts: now,
+    // };
+    const say_dog: StepEvent = {
+      k: ["say", "say"],
+      v: "done",
+      i: [["dog"]],
+      ts: now,
+    };
+    const result = await conditionalWorkflow.spawn().dryRun([ask_cat, say_dog]);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.newEvents[1].i).toEqual([["dog"]]);
+    expect(result.newEvents[1].c?.inputs?.map((i) => i.key)).toEqual([["cat"]]);
   });
 });
