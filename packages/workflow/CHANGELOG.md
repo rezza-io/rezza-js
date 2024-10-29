@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.1] - 2024-10-29
+
+### Changed
+- Refactored `StepInput` type to use discriminated union for better type safety
+- Added `pii` flag to `StepInput` for marking personally identifiable information
+- Made `action` field a single string instead of array
+- Separated JSON content handling with mandatory schema from string-based content types
+- Improved type definitions for content based on input type
+
+### Developer Experience
+- Updated type definitions to provide better IDE support and type checking
+
+
 ## [0.5.0] - 2024-10-29
 
 ### Added

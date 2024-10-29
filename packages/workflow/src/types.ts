@@ -34,16 +34,10 @@ export type StepInput = {
   /** Array of strings identifying this step input. Warns if key and provided event do not match */
   key: string[];
 
-  /** The content/value of the step input */
-  content: string;
+  /** Whether this input contains personally identifiable information (PII) */
+  pii?: boolean;
 
-  /** The format/type of the content - can be JSON, HTML, Markdown or URI */
-  type: "json" | "html" | "md" | "uri";
-
-  /** Optional JSON schema to validate the input content */
-  schema?: object;
-
-  action?: (
+  action?:
     | "print"
     | "display"
     | "say"
@@ -57,9 +51,26 @@ export type StepInput = {
     | "present"
     | "narrate"
     | "request"
-    | "prompt"
-  )[];
-};
+    | "prompt";
+} & (
+  | {
+      /** The content value for string-based formats like HTML, Markdown or URI */
+      content: string;
+
+      /** The format/type specifying how to interpret the string content */
+      type: "html" | "md" | "uri";
+    }
+  | {
+      /** The content value for JSON data as a JavaScript object */
+      content: object;
+
+      /** Indicates this is JSON formatted data */
+      type: "json";
+
+      /** Optional JSON schema to validate the input content */
+      schema: object;
+    }
+);
 
 /**
  * Represents the context for a step in the workflow.
