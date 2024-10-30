@@ -341,7 +341,7 @@ export class Workflow<
   topology(): {
     node: keyof T;
     schema: object;
-    dependecies: string[];
+    dependencies: string[];
     title?: string;
     description?: string;
     isSaga?: boolean;
@@ -350,7 +350,7 @@ export class Workflow<
     const result: {
       node: keyof T;
       schema: object;
-      dependecies: string[];
+      dependencies: string[];
       title?: string;
       description?: string;
       isSaga?: boolean;
@@ -364,7 +364,7 @@ export class Workflow<
       }
       result.push({
         node,
-        dependecies: this.nodes[node].dependencies,
+        dependencies: this.nodes[node].dependencies,
         schema: this.nodes[node].schema,
         title: this.nodes[node].title,
         isSaga: !!this.nodes[node].saga,

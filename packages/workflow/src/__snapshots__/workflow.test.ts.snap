@@ -3,7 +3,7 @@
 exports[`Workflow basic usage 1`] = `
 [
   {
-    "dependecies": [],
+    "dependencies": [],
     "description": "aaaa",
     "isSaga": false,
     "node": "a",
@@ -14,7 +14,7 @@ exports[`Workflow basic usage 1`] = `
     "title": "a",
   },
   {
-    "dependecies": [
+    "dependencies": [
       "a",
     ],
     "description": undefined,
@@ -27,7 +27,7 @@ exports[`Workflow basic usage 1`] = `
     "title": undefined,
   },
   {
-    "dependecies": [
+    "dependencies": [
       "a",
     ],
     "description": undefined,
@@ -40,7 +40,7 @@ exports[`Workflow basic usage 1`] = `
     "title": undefined,
   },
   {
-    "dependecies": [
+    "dependencies": [
       "b",
       "c",
     ],

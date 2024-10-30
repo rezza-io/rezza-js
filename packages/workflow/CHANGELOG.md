@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.3] - 2024-10-30
+
+### Fixed
+- Fixed spelling of "dependencies" field in Workflow.topology() output and test snapshots
+
+
 ## [0.5.2] - 2024-10-29
 
 ### Changed
