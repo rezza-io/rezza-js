@@ -241,7 +241,7 @@ exports[`Workflow basic step 6`] = `
 ]
 `;
 
-exports[`saga function should should tell which events are consumed and ignore irrelavent events 1`] = `
+exports[`saga function should should tell which events are consumed and ignore irrelevant events 1`] = `
 [
   [
     {

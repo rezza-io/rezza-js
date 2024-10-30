@@ -565,7 +565,7 @@ describe("saga function", () => {
       expect(result3.node2?.value).toBe(25);
     }
   });
-  test("should should tell which events are consumed and ignore irrelavent events", async () => {
+  test("should should tell which events are consumed and ignore irrelevant events", async () => {
     const schema = t.Object({
       firstNumber: t.Number({ description: "First number" }),
       secondNumber: t.Number({ description: "Second number" }),

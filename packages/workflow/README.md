@@ -1,6 +1,6 @@
 # @rezza.io/workflow
 
-## Gettings Started
+## Getting Started
 
 ### Install
 
