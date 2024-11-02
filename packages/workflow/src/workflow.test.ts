@@ -66,6 +66,7 @@ describe("Workflow", () => {
             step({
               key: "need_number",
               title: "Enter a number",
+              deadline: +new Date("2024-01-01"),
               description: dedent`
               Enter a number
               `,

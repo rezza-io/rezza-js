@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.4] - 2024-11-02
+
+### Added
+- Added optional `deadline` field to `StepContext` type for specifying step completion deadlines
+- Included deadline timestamps in workflow step events
+
+### Changed
+- Updated test snapshots to include deadline field in relevant test cases
+- Enhanced step context documentation with deadline field description
+
 ## [0.5.3] - 2024-10-30
 
 ### Fixed

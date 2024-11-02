@@ -130,6 +130,7 @@ exports[`Workflow basic step 3`] = `
   "c": {
     "status": "intr",
     "step": {
+      "deadline": 1704067200000,
       "description": "Enter a number",
       "key": [
         "c",
@@ -212,6 +213,7 @@ exports[`Workflow basic step 6`] = `
 [
   {
     "c": {
+      "deadline": 1704067200000,
       "description": "Enter a number",
       "key": "need_number",
       "schema": {

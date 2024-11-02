@@ -78,6 +78,8 @@ export interface StepContext<T = unknown> {
   /** Optional description of the step */
   description?: string;
 
+  /** Optional deadline for completing the step (as timestamp in milliseconds since Unix epoch) */
+  deadline?: number;
   /** Additional metadata for the step as key-value pairs */
   extra?: Record<string, unknown>;
 
