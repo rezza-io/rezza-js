@@ -1,8 +1,7 @@
 export type Warning = {
   type: "context_updated";
   step: string[];
-  old?: string[][];
-  new?: string[][];
+  context: StepContext;
 };
 
 export type StepInput = {

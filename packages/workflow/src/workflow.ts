@@ -257,8 +257,7 @@ export class Workflow<
               this.tempWarnings?.push({
                 type: "context_updated",
                 step: fullKey,
-                old: event.i,
-                new: currentInputKeys,
+                context,
               });
             }
 

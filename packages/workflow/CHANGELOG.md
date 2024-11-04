@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.5] - 2024-11-04
+
+### Changed
+- Simplified `Warning` type by replacing separate `old` and `new` fields with a single `context` field containing full `StepContext`
+- Updated warning generation logic in workflow execution to include complete step context
+
 ## [0.5.4] - 2024-11-02
 
 ### Added
